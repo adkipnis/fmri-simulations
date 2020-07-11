@@ -93,6 +93,8 @@ def merge_masks(atlas_o, roi_ids, merge_list, merged_names, rh_constant = 200):
     return atlas, roi_ids_m
 
 
+
+
 def make_roi_mask(atlas, betas_example, roi_id, fwhm=None, interpolation='nearest'):
     '''
     Extract ROI-specific mask from Atlas in T1w space and sample it down to have
@@ -217,6 +219,42 @@ def create_mask_dict(atlas, betas_example, roi_ids, fwhm = None, interpolation='
             mask_dict_t.update({roi+"_"+side : mask_nifti_t})
 
     return mask_dict_o, mask_dict_s, mask_dict_r, mask_dict_t
+
+
+def test_roi_id_overlap(mask_dict, merge_list, merged_names):
+    '''
+    Test if to-be-merged ROIs are in the keys of the loaded mask dictionary
+    
+    Args:
+        mask_dict (dict):
+            {target_ROI+hemisphere : mask} (preferably mask_dict_d)
+        merge_list (list):
+            List of tuples of ROI names. All ROIs within a Tuple will be merged.
+        merged_names (list):
+            List of ROI names for each merged tuple
+    
+    Returns:
+        intersect_bad (array):
+            List of ROI names in merge_list that occur in mask_dict
+        intersect_bad (array):
+            List of ROI names in merged_names that occur in mask_dict
+    '''
+    intersect = []
+    key_list = list(mask_dict.keys())
+    substring = '_'+key_list[0].split('_')[1]
+    
+    # Flatten merge_list and append each item with an occurring substring in the keylist
+    test_list = []
+    for i in range(len(merge_list)): 
+        test_list.append(list(merge_list[i]))
+    test_list = [item for sublist in test_list for item in sublist]    
+    test_list = [s + substring for s in test_list]
+    should_be_insed_list = [s + substring for s in merged_names]
+    
+    # Intersection list
+    intersect_bad = np.intersect1d(test_list, key_list)
+    intersect_good = np.intersect1d(should_be_insed_list, key_list)
+    return intersect_bad, intersect_good
 
 
 def remove_mask_overlap(mask_dict_r, mask_dict_t):

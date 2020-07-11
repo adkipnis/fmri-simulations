@@ -48,7 +48,13 @@ def mask_dict_pipeline(t1w_mask_path, glm_dir_example, merge_list = None, merged
     if os.path.isfile(mask_dict_d_path) and not overwrite:
         # mask_dict_o = np.load(mask_dict_o_path,allow_pickle='TRUE').item()
         mask_dict_d = np.load(mask_dict_d_path,allow_pickle='TRUE').item()
-    else:
+        intersect_bad, intersect_good = mask_utils.test_roi_id_overlap(mask_dict_d, merge_list, merged_names)
+        
+        if len(intersect_bad)>0 or len(intersect_good)<len(merged_names):
+            overwrite = True
+            print("Loaded mask dictionary contains masks that still require merging. Let's create it anew...")
+           
+    if not os.path.isfile(mask_dict_d_path) or overwrite:
         mask_dict_o, mask_dict_s, mask_dict_r, mask_dict_t = mask_utils.create_mask_dict(atlas, betas_example, roi_ids, fwhm = fwhm, interpolation='nearest', threshold = threshold, rh_constant = 200)
         mask_dict_d = mask_utils.remove_mask_overlap(mask_dict_r, mask_dict_t)
         # np.save(mask_dict_o_path, mask_dict_o) 
@@ -139,8 +145,13 @@ def remove_empty_voxels(pooled_observations, voxel_ids = None, nan_threshold = 0
         
     nan_rows = np.sum(np.isnan(pooled_observations).astype(int), axis = 0)
     bad_cols = np.where(nan_rows>max_nans)
-    print("Out of", obs_shape[0], "observations, more than", max_nans, "were NaN-values for the voxels:", bad_cols[0])
-    pooled_observations_cleaned = np.nan_to_num(np.delete(pooled_observations, bad_cols, axis = 1))
+    
+    if len(bad_cols[0]) > 0:
+        print("Out of", obs_shape[0], "observations, more than", max_nans, "were NaN-values for the voxels:", bad_cols[0]) 
+        pooled_observations_cleaned = np.nan_to_num(np.delete(pooled_observations, bad_cols, axis = 1))
+    else:
+        pooled_observations_cleaned = pooled_observations
+        
     if voxel_ids is not None:
         voxel_ids_cleaned = np.delete(voxel_ids, bad_cols, axis = 0)
     else:
@@ -210,7 +221,7 @@ import pyrsa
 
 # Data analysis parameters
 processing_mode = 'both' # alternatively: 'datasets' or 'both'
-beta_type = 'SPM' # 'SPM' or 'SPM_s'
+beta_type = 'SPM_s' # 'SPM' or 'SPM_s'
 ses_type = 'perceptionTest'
 n_stim = 50 # Use first n_stim beta coefficients
 
@@ -228,13 +239,12 @@ fwhm = np.array([3,3,3]) # For mask smoohing (the functional EPI images had a vo
 threshold = 0.4 # For mask thresholding
 mask_merging = True
 if mask_merging:
-    merge_list = [tuple('PHA%d' % i for i in range(1,4)), tuple('VMV%d' % i for i in range(1,4)), tuple(['MT', 'MST'])]
-    merged_names = ['PHA', 'VMV', 'MT']
+    merge_list = [tuple(['PeEc', 'TF']), tuple('PHA%d' % i for i in range(1,4)), tuple('VMV%d' % i for i in range(1,4)), tuple(['MT', 'MST'])]
+    merged_names = ['IT','PHA', 'VMV', 'MT+MST']
 
 ##############################################################################
-# sub = 1
 
-for sub in range(2, n_subs+1):     
+for sub in range(1, n_subs+1):     
     # Set respective paths to atlas, betas and residuals
     t1w_mask_path = os.path.join(mask_dir, "Native","sub-" + str(sub).zfill(2) + "_Mask_T1w_Glasser.nii.gz")
     glm_dir_example = os.path.join(spm_dir, "sub-"+str(sub).zfill(2), ses_type + '01', "run-01")
@@ -253,8 +263,6 @@ for sub in range(2, n_subs+1):
     voxel_ids_dict = {} 
     mask_dict_d = mask_dict_pipeline(t1w_mask_path, glm_dir_example,
                                      merge_list = merge_list, merged_names = merged_names, overwrite = False)
-    
-    #roi_h = 'V1_left'
     
     # Generate and save pyrsa dataset and pooled residuals for each ROI
     for roi_h in mask_dict_d.keys():
