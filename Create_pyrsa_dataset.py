@@ -218,7 +218,7 @@ def apply_roi_mask(glm_dir, img_num, mask, target = 'betas'):
     Load GLM pattern for prespecified stimulus and apply mask to get a vectorized version
     
     Inputs:
-    - glm_dir (str): Path to GLM directory
+    - glm_dir (str): Path to GLM directory (for SPM outputs)
     - img_num (int): Stimulus number
     - mask (Nifti1Image): To be applied mask (must have same dimensions as the GLM betas image)
 
@@ -238,7 +238,7 @@ def apply_roi_mask(glm_dir, img_num, mask, target = 'betas'):
     # Alternative to nilearn's implementation (allows for plotting of masked 3d image)
     # mask_array = mask.get_fdata()
     # betas_array = betas.get_fdata()
-    # betas_masked = np.multiply(mask_array, betas.get_fdata())
+    # betas_masked = np.multiply(mask_array, betas_array)
     # betas_masked_nifti = nifti1.Nifti1Image(betas_masked, mask.affine.copy())
     # betas_masked_vector = betas_array[mask_array.astype(bool)]
     
@@ -249,6 +249,10 @@ def apply_roi_mask(glm_dir, img_num, mask, target = 'betas'):
 def get_voxel_ids(mask_dict_d, roi_h):
     '''
     Get Voxel positions of the applied mask (useful for channel descriptors)
+    
+    Inputs:
+    - mask_dict_d (dict): {ROI_name : smoothed, resampled and disjunct mask}
+    - roi_h (str): key in mask_dict_d
     '''
     mask_tmp = mask_dict_d[roi_h]
     mask_array = mask_tmp.get_fdata()
@@ -343,7 +347,7 @@ import pyrsa
 # Set directories and specify ROIs
 ds_dir = "/home/alex/ds001246/"
 txt_dir = "/home/alex/templateflow/tpl-Glasser/HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt" #directory of mask descriptors
-beta_type = "SPM_s"
+beta_type = "SPM"
 ses_type = "perceptionTest"
 target_ROIs = ['V%d' % i for i in range(1,5)] + ['VMV%d' % i for i in range(1,4)] + ['PHA%d' % i for i in range(1,4)] + ['VVC', 'FFC', 'TF', 'PeEc', 'MT', 'MST']
 n_stim = 50 # number of unique stimuli
