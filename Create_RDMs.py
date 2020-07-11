@@ -10,12 +10,19 @@ txt_dir = "/home/alex/templateflow/tpl-Glasser/HCP-MMP1_on_MNI152_ICBM2009a_nlin
 mask_dir = os.path.join(ds_dir, "derivatives", "ROI_masks")
 n_subs = len(glob.glob(ds_dir + os.sep + "sub*"))
 
+
+residuals_filename = os.path.join(res_output_dir,"Residuals_"+roi_h+"_"+beta_type)
+            np.save(residuals_filename, np.vstack((residuals_superset[:])))
+
+
+
 sub = 1
 for sub in range(1, n_subs+1): 
     ### 1. Make Subject-specific ROI dictionary
     # Set respective paths to atlas and betas
     mask_dict_d_path = os.path.join(mask_dir, "Native","sub-" + str(sub).zfill(2) + "_mask_dict_T2*w_disjunct.npy")
     dataset_dir = os.path.join(ds_dir, "derivatives", "PYRSA", "datasets", "sub-"+str(sub).zfill(2))
+    
     
     # Load mask dictionary
     mask_dict_d = np.load(mask_dict_d_path,allow_pickle='TRUE').item()
