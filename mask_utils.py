@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Utility funtions for creating and applying ROI masks for fMRI images
+Utility funtions for creating ROI masks from an atlas in native space and applying them to fMRI images
 
 @author: alex
 """
+
 import os
+import glob
 from nibabel import nifti1
 import numpy as np
 import pandas as pd
@@ -328,6 +330,73 @@ def apply_roi_mask_SPM(glm_dir, img_num, mask, target = 'betas', method = 'nilea
         masked = nifti1.Nifti1Image(image_masked, mask.affine.copy())
     
     return masked
+
+
+def mask_and_get_SPM_measurements(mask_dict_d, roi_h, glm_dir, n_stim=None, method = 'nilearn'):
+    '''
+    Apply mask to all beta images of interest and store them in a measurements array (later input for pyrsa.dataset())
+    
+    Args:
+        mask_dict_d (dict):
+            {roi_h : disjunct, smoothed and resampled mask}
+        roi_h (str):
+            ROI name
+        glm_dir (str):
+            Path to GLM directory
+        n_stim (int):
+            number of stimuli (the first n_stim beta images to loop over)
+
+    Returns:
+        measurements (2D-array):
+            array of beta patterns (stimulus x channels)
+    '''
+    if n_stim == None:
+        n_stim = len(glob.glob(glm_dir + os.sep + "beta_*"))
+    
+    mask_tmp = mask_dict_d[roi_h]
+    mask_array = mask_tmp.get_fdata()
+    mask_size = sum(sum(sum(mask_array)))
+    measurements = np.empty((n_stim, int(mask_size))) 
+   
+    for stim_num in range(n_stim):
+        beta_vector = apply_roi_mask_SPM(glm_dir, stim_num+1, mask_tmp, target = 'betas', method = method)
+        measurements[stim_num,:] = beta_vector.copy() 
+        
+    return measurements
+
+
+def mask_and_get_SPM_residuals(mask_dict_d, roi_h, glm_dir, n_res=None, method = 'nilearn'):
+    '''
+    Apply mask to all residual images and store them in an array (used for estimating the precision matrix for crossnobis distance)
+    
+    Args:
+        mask_dict_d (dict):
+            {roi_h : disjunct, smoothed and resampled mask}
+        roi_h (str):
+            ROI name
+        glm_dir (str):
+            Path to GLM directory
+        n_res (int):
+            Number of residual images per run
+    
+    Returns:
+        run_noise (2D-array):
+            array of residual patterns (n_residuals x channels)
+    '''
+    if n_res == None:
+         n_res = len(glob.glob(glm_dir + os.sep + "Res_*"))
+         
+    mask_tmp = mask_dict_d[roi_h]
+    mask_array = mask_tmp.get_fdata()
+    mask_size = sum(sum(sum(mask_array)))
+    residuals = np.empty((n_res, int(mask_size))) 
+   
+    for res_num in range(n_res):
+        res_vector = apply_roi_mask_SPM(glm_dir, res_num+1, mask_tmp, target = 'residuals', method = method)
+        residuals[res_num,:] = res_vector.copy() 
+        
+    return residuals
+
 
 def get_voxel_ids(mask_dict, roi):
     '''
