@@ -1,2 +1,3 @@
 # fmri-simulations (wip)
-This is a collection of scripts used to analyze and simulate fMRI data in order to test the quality of statistical inference with the pyrsa toolbox [repository](https://github.com/rsagroup/pyrsa).
+This is a collection of scripts used to analyze and simulate fMRI data.
+The simulations are used to test the quality of statistical inference of RSA 3.0, implemented in pyrsa [repository](https://github.com/rsagroup/pyrsa).
