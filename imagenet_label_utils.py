@@ -125,6 +125,34 @@ class SynsetIDContainer():
             self.sub_dict.update({synset:label})   
             driver.quit()
 
+    def query_image_urls(self):
+        import urllib
+        self.image_url_base = "http://www.image-net.org/api/text/imagenet.synset.geturls?wnid="
+        self.url_dict = {}        
+        for synset in self.synset_ids:  
+            collection_url = self.image_url_base + synset
+            collection_html = urllib.request.urlopen(collection_url)
+            urllist = []
+            for line in collection_html:               
+                urllist.append(line.decode("utf-8").split('\n')[0])
+            self.url_dict.update({synset : urllist})
+                
+    def query_image_urls_sparse(self):
+        import urllib
+        self.image_url_base = "http://www.image-net.org/api/text/imagenet.synset.geturls?wnid="
+        self.url_dict = {}        
+        for i in range(len(self.synset_ids)):            
+            collection_url = self.image_url_base + self.synset_ids[i]
+            collection_html = urllib.request.urlopen(collection_url)
+            line_num = int(self.image_numbers[i])
+            n = 0            
+            
+            for line in collection_html:               
+                n+=1
+                if n == line_num:
+                    self.url_dict.update({self.synset_ids[i]: line.decode("utf-8").split('\n')[0]})   
+            
+                      
 ### Crop labels
     def crop_labels(self):
         self.full_subdict = self.sub_dict
@@ -197,6 +225,8 @@ class SynsetIDContainer():
         return self.map_clsloc_dict.copy()
     def get_official_map(self):
         return self.official_map.copy()
+    def get_url_dict(self):
+        return self.url_dict.copy()
     def get_untar_commands(self):
         return self.tar_commands.copy()   
     def get_new_dict(self):
@@ -248,15 +278,19 @@ else:
     official_map = synsets.get_official_map()
 synsets.use_official_map()
 
-# Create untar commands and crop new labels
+# Get full url dictionary for all synset IDs
+synsets.query_image_urls()
+url_dict = synsets.get_url_dict()
+
+# Create untar commands and paths to images
 synsets.compile_untar_commands()
 synsets.relative_jpeg_filenames()
 # synsets.absolute_jpeg_filenames("/media/heiko/Disk/imagenet/ILSVRC2012_img_train")
 # synsets.get_abs_jpeg_paths()
 
+# Crop new labels
 synsets.get_new_dict()
 synsets.crop_labels()
-
 
 # # You can still access the original labels and reset your new_dict
 # uncropped_dict = synsets.get_uncropped_dict()
