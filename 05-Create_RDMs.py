@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Pipeline for generating pyrsa RDMs with precision matrices for crossnobis distance estimates
+
+@author: alex
+"""
+
 def stim_to_label(stim_list, label_dict, crop=False):
     '''
     Transform beta_id to object labels

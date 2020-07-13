@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Jul 11 15:11:54 2020
+Pipeline and utility functions for generating pyrsa datasets and corresponding residuals for volumetric ROIs
 
 @author: alex
 """
