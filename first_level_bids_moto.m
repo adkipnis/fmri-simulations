@@ -174,9 +174,9 @@ for i = 1 : length(sub_list)
                     events = spm_load(event_files{n});
 
                     % extract unique event names and remove missing rows
-                    stim_id = unique(string(events.stim_id));
-                    stim_id = rmmissing(stim_id); 
-
+                    stim_id = string(num2str(rmmissing(events.stim_id), '%10.6f'));
+                    stim_id = unique(stim_id); 
+                    
     %                 % Alternatively: extract unique event names and rename missing entries to 'Baseline'
     %                 stim_id = string(events.stim_id);
     %                 stim_id(ismissing(stim_id(:,1))) = 'Baseline';
