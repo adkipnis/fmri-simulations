@@ -180,14 +180,22 @@ class SynsetIDContainer():
         self.abs_jpeg = []
         for i in range(len(self.synset_ids)):
             self.abs_jpeg.append(self.os.path.join(abs_directory, self.synset_ids[i], self.synset_ids[i]+ "_" + self.image_numbers[i][drop_first:] + ".JPEG"))
-        
+
+    def compile_cp_commands(self, cp_command = 'cp', goal_dir = None):
+            self.cp_command = cp_command
+            self.goald_dir = goal_dir
+            if self.goald_dir is None:
+                self.goald_dir = self.os.getcwd()
+            self.cp_commands = []
+            for abs_path in self.abs_jpeg:
+                self.cp_commands.append(self.cp_command + abs_path + ' ' + self.goald_dir)
+                            
 ### Saver methods
-    def save_new_dict(self, filename = None): 
-        import numpy as np
+    def save_new_dict(self, filename = None):   
         self.filename = filename
         if self.filename is None:
             self.filename = self.os.path.join(self.os.getcwd(), 'custom_synset_dictionary')                  
-        np.save(self.filename, self.get_new_dict())
+        self.np.save(self.filename, self.get_new_dict())
         print("Saved new dictionary to:", self.filename + ".npy")
     
     def save_untar_commands(self, filename = None): 
@@ -209,6 +217,14 @@ class SynsetIDContainer():
             with open(self.filename + ".txt", "w") as outfile:
                 outfile.write("\n".join(self.get_abs_jpeg_paths()))
         print("Saved jpeg paths to:", self.filename + ".txt")
+    
+    def save_cp_commands(self, filename = None): 
+        self.filename = filename
+        if self.filename is None:
+            self.filename = self.os.path.join(self.os.getcwd(), 'cp_commands')            
+        with open(self.filename + ".txt", "w") as outfile:
+            outfile.write("\n".join(self.get_cp_commands()))
+        print("Saved cp commands to:", self.filename + ".txt")    
         
 ### Getter and setter methods    
     def set_new_dict(self, sub_dict):
@@ -239,6 +255,8 @@ class SynsetIDContainer():
         return self.rel_jpeg.copy()
     def get_abs_jpeg_paths(self):
         return self.abs_jpeg.copy()
+    def get_cp_commands(self):
+        return self.cp_commands.copy()
     
 ###############################################################################
 
@@ -279,15 +297,18 @@ else:
 synsets.use_official_map()
 
 # Get full url dictionary for all synset IDs
-synsets.query_image_urls()
-url_dict = synsets.get_url_dict()
+# synsets.query_image_urls()
+# url_dict = synsets.get_url_dict()
 
 # Create untar commands and paths to images
 synsets.compile_untar_commands()
-synsets.relative_jpeg_filenames()
-# synsets.absolute_jpeg_filenames("/media/heiko/Disk/imagenet/ILSVRC2012_img_train")
-# synsets.get_abs_jpeg_paths()
-
+# synsets.relative_jpeg_filenames()
+synsets.absolute_jpeg_filenames("/media/heiko/Disk/imagenet/ILSVRC2012_img_val")
+jpg_paths = synsets.get_abs_jpeg_paths()
+synsets.compile_cp_commands(cp_command = "scp", goal_dir = None)
+synsets.get_cp_commands()
+# synsets.save_cp_commands()
+    
 # Crop new labels
 synsets.get_new_dict()
 synsets.crop_labels()

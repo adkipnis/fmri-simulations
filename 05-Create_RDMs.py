@@ -31,6 +31,45 @@ def stim_to_label(stim_list, label_dict, crop=False):
     label_list = np.array(label)
     return label_list
 
+
+# def permute_rdm(rdm, p = None):
+#         """ Permute rows, columns and corresponding pattern descriptors of RDM matrices according to a permutation vector
+        
+#         Args:
+#             p (numpy array):
+#                permutation vector (values must be unique integers from 0 to n_cond of RDM matrix).
+#                If p = None, a random permutation vector is created.
+               
+#         Returns:
+#             rdm_p(pyrsa.rdm.RDMs): the rdm object with a permuted matrix and pattern descriptors
+
+#         """
+#         if p is None:
+#             p = np.random.permutation(rdm.n_cond)
+#             print("No permutation vector specified, performing random permutation.")
+        
+#         assert p.dtype == 'int', "permutation vector must have integer entries."
+#         assert min(p) == 0 and max(p) == rdm.n_cond-1, "permutation vector must have entries ranging from 0 to n_cond"
+#         assert len(np.unique(p)) == rdm.n_cond, "permutation vector must only have unique integer entries"
+        
+#         rdm_mats = rdm.get_matrices()
+#         descriptors = rdm.descriptors.copy()
+#         rdm_descriptors = rdm.rdm_descriptors.copy()
+#         pattern_descriptors = rdm.pattern_descriptors.copy()
+
+#         p_inv = np.arange(len(p))[np.argsort(p)] # To easily reverse permutation later
+#         descriptors.update({'p_inv': p_inv})
+#         rdm_mats = rdm_mats[:,p,:]
+#         rdm_mats = rdm_mats[:,:,p]
+#         stims = np.array(pattern_descriptors['stim'])
+#         pattern_descriptors.update({'stim': list(stims[p].astype(np.str_))})
+                
+#         rdms_p = pyrsa.rdm.RDMs(dissimilarities=rdm_mats,
+#                     descriptors=descriptors,
+#                     rdm_descriptors=rdm_descriptors,
+#                     pattern_descriptors=pattern_descriptors)
+#         return rdms_p
+
 ###############################################################################
 
 import glob
@@ -40,13 +79,14 @@ import matplotlib.pyplot as plt
 import pyrsa
 
 # Set directories and specify ROIs
-ds_dir = "/home/alex/ds001246/"
-txt_dir = "/home/alex/templateflow/tpl-Glasser/HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt" #directory of mask descriptors
+ds_dir = "/home/alex/Datasets/ds001246/"
+txt_dir = "/home/alex/Datasets/templateflow/tpl-Glasser/HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt" #directory of mask descriptors
 mask_dir = os.path.join(ds_dir, "derivatives", "ROI_masks")
-label_dict = np.load(os.path.join(ds_dir, "stimulus_label_dictionary.npy"),allow_pickle='TRUE').item()
+label_dict = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
 n_subs = len(glob.glob(ds_dir + os.sep + "sub*"))
 beta_type = 'SPM_s' 
 rename_stim = True
+p = [0] # Permutation vector
 
 sub = 1
 for sub in range(1, n_subs+1): 
@@ -77,9 +117,15 @@ for sub in range(1, n_subs+1):
         
         # Calculate RDM with crossnobis distance estimates    
         rdm = pyrsa.rdm.calc.calc_rdm(dataset, method='crossnobis', descriptor='stim', cv_descriptor='run', noise=precision_matrix)
+        rdm_p = pyrsa.rdm.rdms.permute_rdms(rdm, p = p)
+        x = rdm_p.get_matrices()
+        
         # TODO: Remember to pull request change in calc_rdm 
         pyrsa.vis.rdm_plot.show_rdm(rdm, do_rank_transform=False, pattern_descriptor='stim',
              cmap=None, rdm_descriptor=None)
+        pyrsa.vis.rdm_plot.show_rdm(rdm_p, do_rank_transform=False, pattern_descriptor='stim',
+             cmap=None, rdm_descriptor=None)
+        
         
         
      

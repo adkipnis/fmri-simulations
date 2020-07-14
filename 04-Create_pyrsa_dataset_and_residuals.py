@@ -31,7 +31,7 @@ def beta_id_to_label(beta_ids, n_stim, label_dict, crop=False):
     return labels
 
 
-def mask_dict_pipeline(t1w_mask_path, glm_dir_example, merge_list = None, merged_names = None, overwrite = False):   
+def mask_dict_pipeline(t1w_mask_path, glm_dir_example, merge_list = None, merged_names = None, overwrite = False, threshold = 0):   
     # Load original atlas and betas
     atlas_o = nifti1.load(t1w_mask_path)
     betas_example = nifti1.load(glm_dir_example + os.sep + "beta_0001.nii")
@@ -236,7 +236,7 @@ n_subs = len(glob.glob(ds_dir + os.sep + "sub*"))
 
 # Mask parameters
 fwhm = np.array([3,3,3]) # For mask smoohing (the functional EPI images had a voxel size of 3 × 3 × 3 mm)
-threshold = 0.4 # For mask thresholding
+mask_threshold = 0.4 # For mask thresholding
 mask_merging = True
 if mask_merging:
     merge_list = [tuple(['PeEc', 'TF']), tuple('PHA%d' % i for i in range(1,4)), tuple('VMV%d' % i for i in range(1,4)), tuple(['MT', 'MST'])]
@@ -262,7 +262,7 @@ for sub in range(1, n_subs+1):
     # Initialize and fetch dictionaries
     voxel_ids_dict = {} 
     mask_dict_d = mask_dict_pipeline(t1w_mask_path, glm_dir_example,
-                                     merge_list = merge_list, merged_names = merged_names, overwrite = False)
+                                     merge_list = merge_list, merged_names = merged_names, overwrite = False, threshold = mask_threshold)
     
     # Generate and save pyrsa dataset and pooled residuals for each ROI
     for roi_h in mask_dict_d.keys():
