@@ -3,7 +3,7 @@ function [design, Opts] = construct_design_matrix(Dirs, Opts, n)
     % design = struct('name', {'Picture'}, 'onset', {events.onset}, 'duration', {events.duration}, 'tmod', {0}, 'pmod', {''});
 
     % - Design matrix: Events (Check if design matrix file exists and create it if not)
-        design_mat = fullfile(Dirs.subdir,'spm_design.mat');
+        design_mat = fullfile(Dirs.results_dir,'spm_design.mat');
         events = spm_load(Dirs.event_files{n});
         % events = spm_load(event_files{n}(1:end-1));
 
@@ -11,13 +11,18 @@ function [design, Opts] = construct_design_matrix(Dirs, Opts, n)
         stim_list = string(num2str(events.stim_id, '%10.6f'));
         unique_ids = unique(stim_list); 
         Opts.stim_id = unique_ids(unique_ids ~= "           NaN");
-
-%                 % Alternatively: extract unique event names and rename missing entries to 'Baseline'
-%                 stim_id = string(events.stim_id);
-%                 stim_id(ismissing(stim_id(:,1))) = 'Baseline';
-%                 events.stim_id = stim_id;
-%                 stim_id = unique(string(events.stim_id));
-
+        Opts.stim_id_ext = Opts.stim_id;
+        
+        % add stim_ids for HRF derivatives
+        if sum(Opts.hrf_derivs) > 0
+            for i = 1:sum(Opts.hrf_derivs)
+                tmp = strcat(Opts.stim_id, '_hrf_', num2str(i));
+                Opts.stim_id_ext = vertcat(Opts.stim_id_ext, tmp);
+            end
+            Opts.stim_id_ext  = sort(Opts.stim_id_ext);
+        end
+                
+        % Construct design matrix
         design = struct('name', {}, 'onset', {}, 'duration', {}, 'tmod', {}, 'pmod', {});
         for d = 1:length(Opts.stim_id)
             id = find(Opts.stim_id(d) == stim_list); % find rows that contain this stimulus
