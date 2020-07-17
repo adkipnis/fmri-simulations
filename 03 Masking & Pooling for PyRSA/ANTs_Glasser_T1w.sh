@@ -1,8 +1,8 @@
 #!/bin/bash
 # Apply ANTs registration of Glasser Atlas to individual T1w space 
       
-data_path="/home/alex/ds001246/derivatives/"
-input_path="/home/alex/templateflow/tpl-Glasser/MMP_in_MNI_corr.nii.gz"
+data_path="/home/alex/Datasets/ds001246/derivatives/"
+input_path="/home/alex/Datasets/templateflow/tpl-Glasser/MMP_in_MNI_corr.nii.gz"
 
 for (( sub=1; sub <= 5; sub=sub+1 )); do
 	

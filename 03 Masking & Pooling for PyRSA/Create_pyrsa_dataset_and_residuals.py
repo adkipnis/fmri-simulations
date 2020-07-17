@@ -221,7 +221,7 @@ import pyrsa
 
 # Data analysis parameters
 processing_mode = 'both' # alternatively: 'datasets' or 'both'
-beta_type = 'SPM_s' # 'SPM' or 'SPM_s'
+beta_type = 'SPM_3' # 'SPM', 'SPM_3', 'SPM_6'
 ses_type = 'perceptionTest'
 n_stim = 50 # Use first n_stim beta coefficients
 
@@ -231,12 +231,12 @@ txt_dir = "/home/alex/Datasets/templateflow/tpl-Glasser/HCP-MMP1_on_MNI152_ICBM2
 spm_dir = os.path.join(ds_dir, "derivatives", beta_type)
 mask_dir = os.path.join(ds_dir, "derivatives", "ROI_masks")
 target_ROIs = ['V%d' % i for i in range(1,5)] + ['VMV%d' % i for i in range(1,4)] + ['PHA%d' % i for i in range(1,4)] + ['VVC', 'FFC', 'TF', 'PeEc', 'MT', 'MST']
-label_dict = np.load(os.path.join(ds_dir, "stimulus_label_dictionary.npy"),allow_pickle='TRUE').item()
+label_dict = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
 n_subs = len(glob.glob(ds_dir + os.sep + "sub*"))
 
 # Mask parameters
 fwhm = np.array([3,3,3]) # For mask smoohing (the functional EPI images had a voxel size of 3 × 3 × 3 mm)
-mask_threshold = 0.4 # For mask thresholding
+mask_threshold = 'adaptive'; # Alternative: arbitraty float between 0 and 1, e.g. 0.4 
 mask_merging = True
 if mask_merging:
     merge_list = [tuple(['PeEc', 'TF']), tuple('PHA%d' % i for i in range(1,4)), tuple('VMV%d' % i for i in range(1,4)), tuple(['MT', 'MST'])]
@@ -248,10 +248,10 @@ for sub in range(1, n_subs+1):
     # Set respective paths to atlas, betas and residuals
     t1w_mask_path = os.path.join(mask_dir, "Native","sub-" + str(sub).zfill(2) + "_Mask_T1w_Glasser.nii.gz")
     glm_dir_example = os.path.join(spm_dir, "sub-"+str(sub).zfill(2), ses_type + '01', "run-01")
-    ds_output_dir = os.path.join(ds_dir, "derivatives", "PYRSA", "datasets", "sub-"+str(sub).zfill(2))
+    ds_output_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "datasets", "sub-"+str(sub).zfill(2))
     if not os.path.isdir(ds_output_dir):
         os.makedirs(ds_output_dir)
-    res_output_dir = os.path.join(ds_dir, "derivatives", "PYRSA", "noise", "sub-"+str(sub).zfill(2))
+    res_output_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "noise", "sub-"+str(sub).zfill(2))
     if not os.path.isdir(res_output_dir):
         os.makedirs(res_output_dir)
      
