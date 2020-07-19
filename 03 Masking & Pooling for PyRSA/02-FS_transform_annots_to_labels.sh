@@ -20,5 +20,6 @@ done
 
 # Optionally plot V1 on surface
 if  [[ $1 = "-p" ]]; then
-	freeview -f sub-01/surf/lh.white:label=sub-01/label_glasser/lh.L_V1_ROI.label
+	freeview -f sub-01/surf/rh.white:label=sub-01/label_glasser/rh.R_V1_ROI.label
 fi
+

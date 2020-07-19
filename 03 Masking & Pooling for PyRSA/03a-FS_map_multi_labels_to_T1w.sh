@@ -12,11 +12,12 @@ cd $SUBJECTS_DIR
 for (( sub=1; sub <= 5; sub=sub+1 )); do
     mkdir -p sub-0$sub/mri_glasser
     for hemi in lh.L_ rh.R_; do
+        hemi_short=${hemi:0:2}
         for ROI in $ROIs; do
             mri_label2vol \
             --label sub-0$sub/label_glasser/$hemi$ROI$S.label \
             --subject sub-0$sub \
-            --hemi lh \
+            --hemi $hemi_short \
             --identity \
             --temp sub-0$sub/mri/T1.mgz \
             --o sub-0$sub/mri_glasser/$hemi$ROI$S.nii.gz

@@ -41,8 +41,8 @@ done
 
 # Optionally plot ROI on T1 template
 if  [[ $1 = "-p" ]]; then
-    freeview sub-01/mri/T1.mgz sub-01/mri_glasser/lh.L_V1_ROI.fbr.nii.gz \
-    -f sub-01/surf/lh.white:label=sub-01/label_glasser/lh.L_V1_ROI.label \
-    -f sub-01/surf/lh.pial:label=sub-01/label_glasser/lh.L_V1_ROI.label
+    freeview sub-01/mri/T1.mgz sub-01/mri_glasser/rh.R_V1_ROI.fbr.nii.gz \
+    -f sub-01/surf/rh.white:label=sub-01/label_glasser/rh.R_V1_ROI.label \
+    -f sub-01/surf/rh.pial:label=sub-01/label_glasser/rh.R_V1_ROI.label
 fi
 

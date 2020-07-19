@@ -16,7 +16,7 @@ for (( sub=1; sub <= 5; sub=sub+1 )); do
         mri_surf2surf \
             --srcsubject fsaverage \
             --trgsubject sub-0$sub \
-            --hemi lh \
+            --hemi $hemi \
             --sval-annot fsaverage/label/$hemi.HCP-MMP1.annot \
             --tval  sub-0$sub/label_glasser/$hemi.HCP-MMP1.annot
     done
