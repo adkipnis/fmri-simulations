@@ -31,7 +31,8 @@ def beta_id_to_label(beta_ids, n_stim, label_dict, crop=False):
     return labels
 
 
-def mask_dict_from_surf_pipeline(sub, mask_dir, roi_ids, glm_dir_example, merge_list = None, merged_names = None, overwrite = False, threshold = 0.4):   
+def mask_dict_from_surf_pipeline(sub, mask_dir, roi_ids, glm_dir_example, merge_list = None, \
+                                 merged_names = None, overwrite = False, threshold = 0.5, voxel_dimensions = None):   
     # Load or create T1w atlas from freesurfer single ROI nifti files
     atlas_o = mask_utils.atlas_form_freesurfer_masks(sub, mask_dir, roi_ids, rh_constant = 200, overwrite = overwrite)
     betas_example = nifti1.load(glm_dir_example + os.sep + "beta_0001.nii")
@@ -44,8 +45,9 @@ def mask_dict_from_surf_pipeline(sub, mask_dir, roi_ids, glm_dir_example, merge_
     
     # Load or create mask dictionary, then make all masks disjunct
     mask_dict_d_path = os.path.join(mask_dir,"sub-" + str(sub).zfill(2) + "_mask_dict_T2*w_disjunct.npy")
+    mask_dict_o_path = os.path.join(mask_dir,"sub-" + str(sub).zfill(2) + "_mask_dict_T1w_disjunct.npy")
     if os.path.isfile(mask_dict_d_path) and not overwrite:
-        # mask_dict_o = np.load(mask_dict_o_path,allow_pickle='TRUE').item()
+        mask_dict_o = np.load(mask_dict_o_path,allow_pickle='TRUE').item()
         mask_dict_d = np.load(mask_dict_d_path,allow_pickle='TRUE').item()
         intersect_bad, intersect_good = mask_utils.test_roi_id_overlap(mask_dict_d, merge_list, merged_names)
         
@@ -54,11 +56,12 @@ def mask_dict_from_surf_pipeline(sub, mask_dir, roi_ids, glm_dir_example, merge_
             print("Loaded mask dictionary contains masks that still require merging. Let's create it anew...")
            
     if not os.path.isfile(mask_dict_d_path) or overwrite:
-        mask_dict_o, mask_dict_s, mask_dict_r, mask_dict_t = mask_utils.create_mask_dict(atlas, betas_example, roi_ids, fwhm = fwhm, interpolation='nearest', threshold = threshold, rh_constant = 200)
+        mask_dict_o, mask_dict_s, mask_dict_r, mask_dict_t = mask_utils.create_mask_dict(atlas, betas_example, 
+                    roi_ids, fwhm = fwhm, interpolation='nearest', threshold = threshold, voxel_dimensions = voxel_dimensions, rh_constant = 200)
         mask_dict_d = mask_utils.remove_mask_overlap(mask_dict_r, mask_dict_t)
-        # np.save(mask_dict_o_path, mask_dict_o) 
+        np.save(mask_dict_o_path, mask_dict_o) 
         np.save(mask_dict_d_path, mask_dict_d) 
-    return mask_dict_d
+    return mask_dict_d, mask_dict_o
    
     
    
@@ -236,15 +239,16 @@ label_dict = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_
 n_subs = len(glob.glob(ds_dir + os.sep + "sub*"))
 
 # Mask parameters
-fwhm = np.array([3,3,3]) # For mask smoohing (the functional EPI images had a voxel size of 3 × 3 × 3 mm)
-mask_threshold = 'adaptive'; # Alternative: arbitraty float between 0 and 1, e.g. 0.4 
+voxel_dimensions = {'T1w': [1,1,1], 'EPI': [3,3,3]}
+fwhm = np.array(voxel_dimensions['EPI']) # For mask smoohing (the functional EPI images had a voxel size of 3 × 3 × 3 mm)
+mask_threshold = 'adaptive' # Alternative: arbitraty float between 0 and 1, e.g. 0.4 
 mask_merging = True
 if mask_merging:
     merge_list = [tuple(['PeEc', 'TF']), tuple('PHA%d' % i for i in range(1,4)), tuple('VMV%d' % i for i in range(1,4)), tuple(['MT', 'MST'])]
     merged_names = ['IT','PHA', 'VMV', 'MT+MST']
 
 ##############################################################################
-
+# sub=1
 for sub in range(1, n_subs+1):     
     # Set respective paths to atlas, betas and residuals
     glm_dir_example = os.path.join(spm_dir, "sub-"+str(sub).zfill(2), ses_type + '01', "run-01")
@@ -263,8 +267,8 @@ for sub in range(1, n_subs+1):
     voxel_ids_dict = {}
     roi_ids = mask_utils.get_roi_ids_glasser(txt_dir, target_ROIs)
     mask_dir = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" + str(sub).zfill(2),"mri_glasser")
-    mask_dict_d = mask_dict_from_surf_pipeline(sub, mask_dir, roi_ids, glm_dir_example,
-                                               merge_list = merge_list, merged_names = merged_names, overwrite = True, threshold = 0.4)
+    mask_dict_d, mask_dict_o = mask_dict_from_surf_pipeline(sub, mask_dir, roi_ids, glm_dir_example, merge_list = merge_list,
+                                               merged_names = merged_names, overwrite = True, threshold = mask_threshold, voxel_dimensions = voxel_dimensions)
     
     # Generate and save pyrsa dataset and pooled residuals for each ROI
     for roi_h in mask_dict_d.keys():

@@ -236,7 +236,7 @@ def make_roi_mask(atlas, betas_example, roi_id, fwhm=None, interpolation='neares
                                       target_shape=betas_array.shape, interpolation=interpolation, copy=True) 
     return mask_nifti_r, mask_nifti_s, mask_nifti
 
-def threshold_mask(mask, threshold = 0):
+def threshold_mask(mask_EPI, threshold = 0.5, voxel_dimensions = None, mask_T1w = None):
     '''
     After smoothing, the downsampled masks are not binary anymore. Make a mask binary again.
     
@@ -251,13 +251,52 @@ def threshold_mask(mask, threshold = 0):
             binary resampled ROI-specific mask image after thresholding
 
     '''
-    mask_array = mask.get_fdata()
-    mask_thresholded = (mask_array >= threshold).astype(float)
-    mask_t = nifti1.Nifti1Image(mask_thresholded, mask.affine.copy())
+    mask_array = mask_EPI.get_fdata()
+    
+    assert type(threshold) == float or threshold == 'adaptive', "threshold must be floating point number or 'adaptive'."
+    if type(threshold) == float:
+        assert (threshold >= 0 and threshold <= 1), "numeric threshold must be between 0 and 1."
+        assert np.unique(mask_array)[1] < threshold, "numeric threshold set too low, all values will pass."
+    else:
+        assert type(voxel_dimensions) == dict, "for adaptive thresholding you must provide the voxel dimensions in mm."
+
+    
+    if type(threshold) == float:
+        mask_thresholded = (mask_array >= threshold).astype(float)
+    else:
+        mask_array_T1w = mask_T1w.get_fdata()
+        geom_vol_T1w = sum(sum(sum(mask_array_T1w))) * np.prod(voxel_dimensions['T1w'])
+        mask_thresholded = optimize_threshold(mask_array, geom_vol_T1w, voxel_dimensions)
+        
+    mask_t = nifti1.Nifti1Image(mask_thresholded, mask_EPI.affine.copy())
     return mask_t
 
+def optimize_threshold(mask_array, geom_vol_T1w, voxel_dimensions, threshold = 0.5, stepsize = 0.01, epsilon = 10, max_iter = 100):
+    mask_thresholded = (mask_array >= threshold).astype(float)
+    geom_vol_EPI = sum(sum(sum(mask_thresholded))) * np.prod(voxel_dimensions['EPI'])
+    delta = geom_vol_EPI - geom_vol_T1w  
+    threshold_tmp = threshold
+    i = 0
+    change = []
+    while abs(delta) > epsilon and i <= max_iter:
+        if delta > 0:
+            threshold_tmp += stepsize
+        else:
+            threshold_tmp -= stepsize        
+        mask_thresholded = (mask_array >= threshold_tmp).astype(float)
+        geom_vol_EPI = sum(sum(sum(mask_thresholded))) * np.prod(voxel_dimensions['EPI'])
+        delta_tmp = geom_vol_EPI - geom_vol_T1w
+        change.append(delta - delta_tmp)
+        if i > 2 and change[-1] > change[-2]:
+            stepsize *= 0.9
+        delta = delta_tmp
+        if i > 20 and len(np.unique(np.absolute(change[-10:-1]))) == 1:
+           break 
+        i += 1
+    print("Converged to threshold:", threshold_tmp)
+    return mask_thresholded
 
-def create_mask_dict(atlas, betas_example, roi_ids, fwhm = None, interpolation='nearest', threshold = 0, rh_constant = 200):
+def create_mask_dict(atlas, betas_example, roi_ids, fwhm = None, interpolation='nearest', threshold = 0.5, voxel_dimensions = None, rh_constant = 200):
     '''
     Create a dictionary of mask nifti files for every target ROI
     
@@ -305,7 +344,7 @@ def create_mask_dict(atlas, betas_example, roi_ids, fwhm = None, interpolation='
             roi_id = roi_ids[roi][0] + hemi_dict[side]
             mask_nifti_r, mask_nifti_s , mask_nifti_o = make_roi_mask(atlas, betas_example, roi_id,
                                                                       fwhm=fwhm, interpolation=interpolation)
-            mask_nifti_t = threshold_mask(mask_nifti_r, threshold=threshold)
+            mask_nifti_t = threshold_mask(mask_nifti_r, threshold = threshold, voxel_dimensions = voxel_dimensions, mask_T1w = mask_nifti_o)
             mask_dict_o.update({roi+"_"+side : mask_nifti_o})
             mask_dict_s.update({roi+"_"+side : mask_nifti_s})
             mask_dict_r.update({roi+"_"+side : mask_nifti_r})
