@@ -67,7 +67,7 @@ for i = 1 %: Dirs.n_subs
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.RT = Opts.TR;
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t = 50; % Microtime resoultion (here: number of slices)
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t0 = 25; % Microtime onset (here: middle slice)            
-            spm_specify.matlabbatch{1}.spm.stats.fmri_spec.mask = {Dirs.mask_file{1}}; 
+            spm_specify.matlabbatch{1}.spm.stats.fmri_spec.mask = Dirs.mask_file; 
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.sess(1).cond = design;
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.sess(1).multi = {''};
 %                 spm_specify.matlabbatch{1}.spm.stats.fmri_spec.sess(1).regress = {''};
@@ -77,6 +77,7 @@ for i = 1 %: Dirs.n_subs
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.volt = 1;
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.global = 'None';
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.cvi = 'AR(1)'; 
+            
             spm_jobman('run', spm_specify.matlabbatch)
 
 
@@ -89,39 +90,48 @@ for i = 1 %: Dirs.n_subs
 
             spm_jobman('run',spm_estimate.matlabbatch)
 
-
             %% 2.8 F-Contrasts (Just for sanity check)
             if Opts.verbose, fprintf('F-Test...\n'), end 
             spm_contrasts = {};
             spm_contrasts.matlabbatch{1}.spm.stats.con.spmmat = {[Dirs.results_dir filesep 'SPM.mat']}; 
-            spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.name = 'Effects of interest';
+            spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.name = 'Effects-of-interest';
             spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.weights =  effects_of_interest(Opts); 
             spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.sessrep = 'none';
             spm_contrasts.matlabbatch{1}.spm.stats.con.delete = 0;
 
             spm_jobman('run',spm_contrasts.matlabbatch);
 
-            %% 2.9 Results
+            %% 2.9 Default Results
             if Opts.verbose, fprintf('Results...\n'), end
             spm_results = {};
             spm_results.matlabbatch{1}.spm.stats.results.spmmat = {[Dirs.results_dir filesep 'SPM.mat']}; 
             spm_results.matlabbatch{1}.spm.stats.results.conspec.titlestr = '';
             spm_results.matlabbatch{1}.spm.stats.results.conspec.contrasts = Inf;
             spm_results.matlabbatch{1}.spm.stats.results.conspec.threshdesc = 'FWE';
-            spm_results.matlabbatch{1}.spm.stats.results.conspec.thresh = 0.05;
+            spm_results.matlabbatch{1}.spm.stats.results.conspec.thresh = 0.01;
             spm_results.matlabbatch{1}.spm.stats.results.conspec.extent = 0;
             spm_results.matlabbatch{1}.spm.stats.results.conspec.conjunction = 1;
-            spm_results.matlabbatch{1}.spm.stats.results.conspec.mask.none = 1; 
+            spm_results.matlabbatch{1}.spm.stats.results.conspec.mask.none = 1;
+%             spm_results.matlabbatch{1}.spm.stats.results.conspec.mask.image.name = Dirs.mask_file;
+%             spm_results.matlabbatch{1}.spm.stats.results.conspec.mask.image.mtype = 0;
+            spm_results.matlabbatch{1}.spm.stats.results.conspec.titlestr = {'Effects of interest'};
             spm_results.matlabbatch{1}.spm.stats.results.units = 1;
-            spm_results.matlabbatch{1}.spm.stats.results.export{1}.ps = true;
+            spm_results.matlabbatch{1}.spm.stats.results.print = true;
             
-            % Add unthresholded results
-%             spm_results.matlabbatch{2} = spm_results.matlabbatch{1};
-%             spm_results.matlabbatch{2}.spm.stats.results.conspec.thresh = 1;
             spm_jobman('run',spm_results.matlabbatch);
             
-      
-
+            %% 2.10 Custom Results
+            
+            % Save SPM results output
+            save('xSPM.mat','xSPM')
+            save('TabDat.mat','TabDat')
+            
+            % Write nice table for each contrast analysis
+            better_results_table(Dirs, spm_results, TabDat);
+            
+            % Save cluster map and significance map as nifti file
+            make_inferential_maps(Dirs);
+            
         end
     end
 end
