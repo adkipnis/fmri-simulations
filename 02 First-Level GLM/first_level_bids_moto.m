@@ -12,24 +12,26 @@ addpath('/moto/home/ak4572/GLM_Utils/'); % path to utility functions for this sc
 Dirs.BIDSdir = '/moto/nklab/projects/ds001246/';
 
 % Options
+Opts = struct();
 Opts.verbose = true;
 Opts.session_type = 'perceptionTest';
 Opts.space = 'T1w';
 Opts.TR = 3; % Repetition time
 Opts.rewrite = true; % overwrites previously saved outputs
-Opts.t_smooth = true; % apply temporal smoothing
+Opts.t_smooth = false; % apply temporal smoothing
 Opts.s_smooth = true; % apply spatial smoothing
 Opts.resmooth = false; % redo smoothing even if smoothed images exist
 Opts.fwhm_s = 3; % Full-width at half maximum of Gaussian spatial high pass filter in mm
 Opts.fwhm_t = 128; % Full-width at half maximum of Gaussian temporal high pass filter in seconds
 Opts.smooth_prefix = strcat('fwhm_',num2str(Opts.fwhm_s), '_'); % Add prefix to smoothed files
-Opts.n_pcs = 6; % number of noise PCs to include as noise regressors
-Opts.n_cos = 4; % number cosine bases for modeling drift
-Opts.use_motion_regressors = true;
-Opts.hrf_derivs = [1 0]; % Estimate coefficients for HRF derivatives (first and second)
+Opts.hrf_derivs = [0 0]; % Estimate coefficients for HRF derivatives (first and second)
 
 % Confounds and directories
-Opts.confound_names = get_confound_names({'global_signal', 'dvars', 'framewise_displacement'}, Opts);
+Opts.use_global_signals = 'none'; % (csf, white matter, global signal) options: 'none', 'basic', 'deriv', 'power', 'full'
+Opts.use_motion_regressors = 'full'; % options: 'none', 'minimal, 'basic', 'deriv', 'power', 'full'
+Opts.n_pcs = 6; % number of noise PCs to include as noise regressors
+Opts.n_cos = 6; % number cosine bases for modeling drift
+Opts.confound_names = get_confound_names(Opts);
 Dirs = parse_bids_base(Dirs.BIDSdir, Opts); % Parse BIDS directory
 
 % Initialize SPM
@@ -37,7 +39,7 @@ spm('Defaults','fMRI'); %Initialise SPM fmri
 spm_jobman('initcfg');  %Initialise SPM batch mode
 
 %% === 2. Create SPM Batch structure
-for i = 1 : Dirs.n_subs
+for i = 1 %: Dirs.n_subs
     Dirs = parse_bids_sub(Dirs, Opts, i);
     
     for s = 1 : Dirs.n_ses  
@@ -112,8 +114,13 @@ for i = 1 : Dirs.n_subs
             spm_results.matlabbatch{1}.spm.stats.results.conspec.mask.none = 1; 
             spm_results.matlabbatch{1}.spm.stats.results.units = 1;
             spm_results.matlabbatch{1}.spm.stats.results.export{1}.ps = true;
-
+            
+            % Add unthresholded results
+%             spm_results.matlabbatch{2} = spm_results.matlabbatch{1};
+%             spm_results.matlabbatch{2}.spm.stats.results.conspec.thresh = 1;
             spm_jobman('run',spm_results.matlabbatch);
+            
+      
 
         end
     end
