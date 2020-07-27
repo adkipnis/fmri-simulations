@@ -13,4 +13,4 @@
 
 
 module load matlab
-matlab -nodisplay -nosplash - nodesktop -r "cd /moto/home/ak4572/; try, run ('/moto/home/ak4572/first_level_bids_moto.m'); catch me, fprintf('%s / %s\n',me.identifier,me.message), end, exit"
+matlab -nodisplay -nosplash - nodesktop -r "cd /moto/home/ak4572/; try, run ('/moto/home/ak4572/first_level_bids_run-wise_moto.m'); catch me, fprintf('%s / %s\n',me.identifier,me.message), end, exit"
