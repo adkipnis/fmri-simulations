@@ -1,4 +1,4 @@
-function basis = effects_of_interest(Opts, n)
+function basis = effects_of_noise(Opts, confounds_list, n)
     
     if Opts.pool_inference == false
         n = 1;
@@ -6,14 +6,21 @@ function basis = effects_of_interest(Opts, n)
         error("Specify number of runs in F-Test!")
     end
     
+    %%%
+    
+    idx = [];
+    for c = 1:length(confounds_list)
+        idx(c) = find(strcmp(Opts.confound_names, confounds_list(c)));
+    end
+    regressor_idx = idx + Opts.n_stim_betas;
     
     %%%
     
     basis_init = zeros(Opts.n_reg, Opts.n_reg-1);
-    step = 1 + sum(Opts.hrf_derivs);
     
     basis_tmp = basis_init;
-    for i = 1:step:Opts.n_stim_betas
+    
+    for i = regressor_idx
         basis_tmp(i,i) = 1;
     end
     

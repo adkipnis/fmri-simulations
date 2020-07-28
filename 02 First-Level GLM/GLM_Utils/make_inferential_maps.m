@@ -1,9 +1,7 @@
-function make_inferential_maps(results_dir, correction_type)
+function make_inferential_maps(xSPM, results_dir, correction_type)
     % Partially derived from https://github.com/solleo/myspm/edit/master/myspm_result.m
-
-    load([results_dir,'/SPM.mat']);
-    load([results_dir,'/xSPM.mat']);
-    con_title = SPM.xCon(1).name;
+    
+    con_title = xSPM.title;
     
     %% Get cluster data
     
