@@ -15,7 +15,14 @@ function F_test_pipeline(results_dir, contrast_name, Opts, r)
     spm_contrasts = {};
     spm_contrasts.matlabbatch{1}.spm.stats.con.spmmat = {[results_dir filesep 'SPM.mat']}; 
     spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.name = contrast_name;
-    spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.weights =  effects_of_interest(Opts, r); 
+    
+    if strcmp(contrast_name, 'Effects-of-interest') 
+        spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.weights =  effects_of_interest(Opts, r); 
+    elseif strcmp(contrast_name, 'Full-model')  
+        spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.weights =  eye(Opts.n_reg); 
+    else
+        error("Specify a viable F-contrast scheme ('Effects-of-interest' or 'Full-model') or change code.")
+    end
     spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.sessrep = 'none';
     spm_contrasts.matlabbatch{1}.spm.stats.con.delete = 0;
   
