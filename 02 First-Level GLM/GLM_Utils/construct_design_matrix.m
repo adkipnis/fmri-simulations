@@ -48,7 +48,7 @@ function [design, Opts, Dirs] = construct_design_matrix(Dirs, Opts, n)
         end
         
         % Export design_mat and make filename for stim_id_file (we will use it later as a dictionary for our beta coefficients)
-        save(design_cond,'design');
+%         save(design_cond,'design');
         save(design_multi,'names', 'onsets', 'durations');
         Dirs.design_multi = strcat(Dirs.results_dir, filesep, 'spm_design_multi.mat');
         

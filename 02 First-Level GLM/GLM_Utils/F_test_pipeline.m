@@ -11,11 +11,17 @@ function F_test_pipeline(results_dir, contrast_name, Opts, r)
     else
         spm_get_defaults('cmdline',false);
     end
+    
+    if strcmp(Opts.thresh_desc, 'FDR')
+        spm_get_defaults('stats.topoFDR',false);
+     else
+        spm_get_defaults('stats.topoFDR',true);
+    end
+    
     %% F-Contrasts
     spm_contrasts = {};
     spm_contrasts.matlabbatch{1}.spm.stats.con.spmmat = {[results_dir filesep 'SPM.mat']}; 
     spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.name = contrast_name;
-    
     if strcmp(contrast_name, 'Effects-of-interest') 
         spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.weights =  effects_of_interest(Opts, r); 
     elseif strcmp(contrast_name, 'Full-model')  
@@ -25,16 +31,15 @@ function F_test_pipeline(results_dir, contrast_name, Opts, r)
     end
     spm_contrasts.matlabbatch{1}.spm.stats.con.consess{1}.fcon.sessrep = 'none';
     spm_contrasts.matlabbatch{1}.spm.stats.con.delete = 0;
-  
     spm_jobman('run',spm_contrasts.matlabbatch);
 
     %% Default Results
-    if Opts.verbose, fprintf('Results...\n'), end
+    fprintf('Results...\n')
     spm_results = {};
     spm_results.matlabbatch{1}.spm.stats.results.spmmat = {[results_dir filesep 'SPM.mat']}; 
     spm_results.matlabbatch{1}.spm.stats.results.conspec.titlestr = contrast_name;
     spm_results.matlabbatch{1}.spm.stats.results.conspec.contrasts = Inf;
-    spm_results.matlabbatch{1}.spm.stats.results.conspec.threshdesc = 'FWE';
+    spm_results.matlabbatch{1}.spm.stats.results.conspec.threshdesc = Opts.thresh_desc;
     spm_results.matlabbatch{1}.spm.stats.results.conspec.thresh = Opts.alpha_level;
     spm_results.matlabbatch{1}.spm.stats.results.conspec.extent = 0;
     spm_results.matlabbatch{1}.spm.stats.results.conspec.conjunction = 1;

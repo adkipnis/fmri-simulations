@@ -1,5 +1,7 @@
 function [spm_specify, Dirs] = run_smoothing(spm_specify, Dirs, Opts, r)
-    if Opts.s_smooth          
+    
+    % Spatial
+    if Opts.fwhm_s > 0         
         if ~exist(Dirs.nii_file_s{1},'file') || Opts.resmooth
             if Opts.verbose, fprintf('Spatial smoothing...\n'), end 
             spm_smooth.matlabbatch{1}.spm.spatial.smooth.data = cellstr(Dirs.run_scans);
@@ -14,11 +16,8 @@ function [spm_specify, Dirs] = run_smoothing(spm_specify, Dirs, Opts, r)
     else
         spm_specify.matlabbatch{1}.spm.stats.fmri_spec.sess(r).scans = cellstr(Dirs.run_scans);
     end
-    
 
-    if Opts.t_smooth
-        spm_specify.matlabbatch{1}.spm.stats.fmri_spec.sess(r).hpf = Opts.fwhm_t; % temporal high-pass filter 
-    else
-        spm_specify.matlabbatch{1}.spm.stats.fmri_spec.sess(r).hpf = Inf; % disables hpf
-    end
+    % Temporal
+    spm_specify.matlabbatch{1}.spm.stats.fmri_spec.sess(r).hpf = Opts.fwhm_t; % temporal high-pass filter (Inf disables hpf)
+
 end

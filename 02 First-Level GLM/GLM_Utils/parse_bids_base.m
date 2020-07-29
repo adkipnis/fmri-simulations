@@ -8,11 +8,7 @@ function Dirs = parse_bids_base(BIDSdir, Opts)
         suffix = '_pooled';
     end
 
-    if Opts.s_smooth
-        Dirs.outputdir = fullfile(Dirs.BIDSdir, 'derivatives',strcat('SPM_', string(Opts.fwhm_s), suffix));
-    else
-        Dirs.outputdir = fullfile(Dirs.BIDSdir, 'derivatives',strcat('SPM', suffix));
-    end
+    Dirs.outputdir = fullfile(Dirs.BIDSdir, 'derivatives',strcat('SPM_', string(Opts.fwhm_s), suffix));
     spm_mkdir(Dirs.outputdir,strcat('sub-', char(Dirs.sub_list)));
     
 end

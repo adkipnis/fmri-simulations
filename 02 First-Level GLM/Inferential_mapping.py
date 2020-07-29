@@ -6,7 +6,7 @@ Plot inferential maps created by SPM
 @author: alex
 """
 
-def get_statistical_img(sub, ds_dir, session_type, FWHM = None, image_type = "spmF_0001.nii", method = 'run-wise'):    
+def get_statistical_img(sub, ds_dir, session_type, FWHM = None, image_type = "spmF_0001.nii", method = 'run-wise', bg_img = None):    
     """
     Load or create statistical parametric map of F-values, clusters or significance
     
@@ -23,7 +23,9 @@ def get_statistical_img(sub, ds_dir, session_type, FWHM = None, image_type = "sp
             relative filename of the statistical image of interest
         method (str):
             run-wise (averages each run's statistical image) or pooled (takes image from '-pooled' folder)
-      
+        bg_img(Nifti):
+            Nifti object used as background image for single run plots. If none is provided, no single runs will be plotted.
+                      
     Returns:
         stat_img(Nifti):
             Nifti object for the specified type of statistical map
@@ -57,7 +59,13 @@ def get_statistical_img(sub, ds_dir, session_type, FWHM = None, image_type = "sp
                 img = nifti1.load(img_path)
                 img_array = img.get_fdata()
                 array_superset.append(img_array)
-        
+                if bg_img is not None:    
+                    plot_title = "Sub-0"+str(sub)+"_"+output_type+"_"+image_type[:-4]+"_"+"ses-"+str(ses).zfill(2)+"_"+"run-"+str(run).zfill(2)
+                    plotting.view_img(img, bg_img = bg_img , cut_coords=plot_cords, title=plot_title,
+                                 resampling_interpolation=resample_plot, vmax=vmax, opacity=1, symmetric_cmap=False, cmap=plt.get_cmap(cmap_name)).save_as_html(plot_title+'.html')
+                    # plotting.plot_stat_map(img, bg_img = bg_img , display_mode='z', cut_coords=5, title=plot_title,
+                    #              resampling_interpolation=resample_plot, vmax=vmax, colorbar=False, symmetric_cbar=False, output_file=plot_title+'.png')
+                    
         img_affine = img.affine.copy()
         img_array_mean = np.average(array_superset, axis=0)
         stat_img = nifti1.Nifti1Image(img_array_mean, img_affine)
@@ -95,13 +103,13 @@ n_subs = len(glob.glob(ds_dir + os.sep + "sub*"))
 
        
 for sub in range(1, n_subs+1):  
-    # Load statistical image
-    stat_img, array_superset, output_type = get_statistical_img(sub, ds_dir, session_type, FWHM = FWHM, image_type = image_type, method = method)
+    # Load statistical image (plot each run if bg_img is specified in function)
+    bg_img = os.path.join(ds_dir, "sub-"+str(sub).zfill(2), "ses-anatomy", "anat", "sub-"+str(sub).zfill(2)+"_ses-anatomy_T1w.nii.gz")
+    stat_img, array_superset, output_type = get_statistical_img(sub, ds_dir, session_type, FWHM = FWHM, image_type = image_type, method = method, bg_img = None)
     
     # Plotting
-    bg_img = os.path.join(ds_dir, "sub-"+str(sub).zfill(2), "ses-anatomy", "anat", "sub-"+str(sub).zfill(2)+"_ses-anatomy_T1w.nii.gz")
     plot_title = "Sub-0"+str(sub)+"_"+output_type+"_"+image_type[:-4]+"_"+method
     img_plot = plotting.view_img(stat_img, bg_img = bg_img , cut_coords=plot_cords, title=plot_title,
                                  resampling_interpolation=resample_plot, vmax=vmax, opacity=1, symmetric_cmap=False, cmap=plt.get_cmap(cmap_name))
     img_plot.open_in_browser()
-    img_plot.save_as_html(plot_title+'_T1w.html')
+    img_plot.save_as_html(plot_title+'.html')

@@ -1,56 +1,56 @@
-%===================================================================================
-%     SPM12 First-level full GLM estimation post-fmriprep (w/ optional smoothing)
-%===================================================================================
+%============================================================
+%     Post-fMRIPrep SPM12 first-level GLM (run-wise)
+%============================================================
 
-%% === 1. Preparations ===
-% Custom parameters
+%% 1. Preparations
+%----- Custom paths
+clc
 clear all
 format long g
-addpath('/home/alex/matlab/Toolboxes/spm12');
-addpath('/home/alex/matlab/SPM Batchscripts/GLM_Utils/'); % path to utility functions for this script
-Dirs.BIDSdir = '/home/alex/Datasets/ds001246/';
+addpath('/moto/home/ak4572/spm12');
+addpath('/moto/home/ak4572/GLM_Utils/'); % path to utility functions for this script
+Dirs.BIDSdir = '/moto/nklab/projects/ds001246/';
 
-% Options
+%------ Options
 Opts = struct();
-Opts.verbose = true;
-Opts.session_type = 'perceptionTest';
-Opts.space = 'T1w';
-Opts.TR = 3; % Repetition time
+Opts.task = 'perception';
+Opts.subtask = 'Test';
+Opts.session_type = [Opts.task, Opts.subtask];
+Opts = load_task_json(Opts, Dirs); % add task-related MRI specs to Opts
+Opts.pool_inference = false; % Pool runs for model estimation and inference (don't change this, use *_pooled version instead!)
 Opts.rewrite = true; % overwrites previously saved outputs
-Opts.pool_inference = false; % Pool runs for model estimation and inference (don't change this, use *_multi version instead!)
-Opts.t_smooth = false; % apply temporal smoothing
-Opts.s_smooth = true; % apply spatial smoothing
 Opts.resmooth = false; % redo smoothing even if smoothed images exist
-Opts.fwhm_s = 3; % Full-width at half maximum of Gaussian spatial high pass filter in mm
-Opts.fwhm_t = 128; % Full-width at half maximum of Gaussian temporal high pass filter in seconds
+Opts.fwhm_s = 3; % Full-width at half maximum of Gaussian spatial high pass filter in mm - set to 0 if no spatial smoothing is wished
+Opts.fwhm_t = Inf; % Full-width at half maximum of Gaussian temporal high pass filter in seconds - set to Inf if no hpf is wished
 Opts.smooth_prefix = strcat('fwhm_',num2str(Opts.fwhm_s), '_'); % Add prefix to smoothed files
 Opts.hrf_derivs = [0 0]; % Estimate coefficients for HRF derivatives (first and second)
-Opts.alpha_level = 0.05; % For statistical testing
+Opts.thresh_desc = 'FWE'; % options: 'FWE', 'FDR', 'none' -> control FWER or FDR before including voxels to clusters
+Opts.alpha_level = 0.05; % For statistical testing of clusters
+Opts.save_fitted_response = 'none'; % options: 'predicted', 'corrected', 'none'
 
-% Confounds and directories
-Opts.test_noise_regressors = true; % perform additional F-Tests on groups of noise regressors
+%------ Confounds and directories
+Opts.test_noise_regressors = false; % perform additional F-Tests on groups of noise regressors
 Opts.use_global_signals = 'none'; % (csf, white matter, global signal) options: 'none', 'basic', 'deriv', 'power', 'full'
-Opts.use_motion_regressors = 'full'; % options: 'none', 'minimal, 'basic', 'deriv', 'power', 'full'
+Opts.use_motion_regressors = 'deriv'; % options: 'none', 'minimal, 'basic', 'deriv', 'power', 'full'
 Opts.n_pcs = 6; % number of noise PCs to include as noise regressors
 Opts.n_cos = 6; % number cosine bases for modeling drift
-[Opts.confound_names, Regs] = get_confound_names(Opts);
+[Opts, Regs] = get_confound_names(Opts);
 Dirs = parse_bids_base(Dirs.BIDSdir, Opts); % Parse BIDS directory
 
-% Initialize SPM
+
+%% 2. Create SPM Batch structure
 spm('Defaults','fMRI'); %Initialise SPM fmri
 spm_jobman('initcfg');  %Initialise SPM batch mode
 
-
-%% === 2. Create SPM Batch structure
 for i = 1 : Dirs.n_subs
     Dirs = parse_bids_sub(Dirs, Opts, i);
     
     for s = 1 : Dirs.n_ses  
         % 2.1 Create file lists
-        Dirs = create_filelists_from_bids(Dirs, Opts, i, s);
+        Dirs = create_filelists_from_bids(Dirs, i, s);
 
         for n = 1 : Dirs.n_runs
-            if Opts.verbose, fprintf('Processing subject %d''s run #%d of session "%s".\n', i, n, Dirs.sesh_list{s}), end
+            fprintf('Processing subject %d''s run #%d of session "%s".\n', i, n, Dirs.sesh_list{s})
 
             % 2.2 Add paths to Nifti files
             Dirs = add_nii_files(Dirs, Opts, i, s, n);
@@ -64,7 +64,7 @@ for i = 1 : Dirs.n_subs
             Dirs = save_confounds(Dirs, Opts, n);
 
             % 2.5 Model specification
-            if Opts.verbose, fprintf('Model specification...\n'), end
+            fprintf('Model specification...\n')
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.dir = {Dirs.results_dir};
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.units = 'secs'; % onset times in secs (seconds) or scans (TRs);
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.RT = Opts.TR;
@@ -82,19 +82,20 @@ for i = 1 : Dirs.n_subs
             spm_specify.matlabbatch{1}.spm.stats.fmri_spec.cvi = 'AR(1)'; 
             
             spm_jobman('run', spm_specify.matlabbatch)
-
-
+            
+            
             %% 2.7 Model estimation
-            if Opts.verbose, fprintf('Parameter estimation...\n'), end 
+            fprintf('Parameter estimation...\n') 
             spm_estimate = {};
             spm_estimate.matlabbatch{1}.spm.stats.fmri_est.spmmat(1) = {[Dirs.results_dir filesep 'SPM.mat']};  
             spm_estimate.matlabbatch{1}.spm.stats.fmri_est.write_residuals = 1; % write_residuals                
             spm_estimate.matlabbatch{1}.spm.stats.fmri_est.method.Classical = 1; % ReML
 
             spm_jobman('run',spm_estimate.matlabbatch)
-
+            
+            
             %% 2.8 Signal extra SS F-Test pipeline (Contrasts, Results and Exports)
-            if Opts.verbose, fprintf('F-Testing...\n'), end 
+            fprintf('F-Testing...\n')
             
             % Set contrast name
             contrast_name = 'Effects-of-interest';
@@ -110,8 +111,16 @@ for i = 1 : Dirs.n_subs
             better_results_table(TabDat, Dirs.results_dir, contrast_name, Opts);
             
             % Save cluster map and significance map as nifti file
-            make_inferential_maps(xSPM, Dirs.results_dir, 'FWE');
-            make_inferential_maps(xSPM, Dirs.results_dir, 'FDR');
+            make_cluster_maps(xSPM, Dirs.results_dir, Opts);
+                        
+            % Save the actual design matrix (with convolved HRF) and the filtered (by spm_filter) one as CSV file
+            csvwrite('spm_design_matrix.csv', SPM.xX.X); 
+            csvwrite('spm_design_matrix_filtered.csv', SPM.xX.nKX); 
+            
+            % Optionally generate nifti images of predicted signal for these contrasts
+            if ~strcmp(Opts.save_fitted_response, 'none')
+                save_fitted_responses(SPM, xSPM, Opts, 1);
+            end
 
             %% 2.9 Optional: Noise regressors extra SS F-Test pipelines
           
@@ -142,7 +151,7 @@ for i = 1 : Dirs.n_subs
                     better_results_table(TabDat, Dirs.results_dir, contrast_name, Opts);
 
                     % Save cluster map and significance map as nifti file
-                    make_inferential_maps(xSPM, Dirs.results_dir, 'FWE');
+                    make_cluster_maps(xSPM, Dirs.results_dir, Opts);
                 end
             end
         end
