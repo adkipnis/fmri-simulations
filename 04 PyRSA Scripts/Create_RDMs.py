@@ -81,20 +81,20 @@ import pyrsa
 # Set directories and specify ROIs
 ds_dir = "/home/alex/Datasets/ds001246/"
 txt_dir = "/home/alex/Datasets/templateflow/tpl-Glasser/HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt" #directory of mask descriptors
-mask_dir = os.path.join(ds_dir, "derivatives", "ROI_masks")
 label_dict = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
 n_subs = len(glob.glob(ds_dir + os.sep + "sub*"))
-beta_type = 'SPM_s' 
+beta_type = 'SPM_3' 
 rename_stim = True
 p = [0] # Permutation vector
 
 sub = 1
 for sub in range(1, n_subs+1): 
     # Set respective paths
-    mask_dict_d_path = os.path.join(mask_dir, "Native","sub-" + str(sub).zfill(2) + "_mask_dict_T2*w_disjunct.npy")
+    mask_dir = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" + str(sub).zfill(2),"mri_glasser")
+    mask_dict_d_path = os.path.join(mask_dir,"sub-" + str(sub).zfill(2) + "_mask_dict_T2*w_disjunct.npy")
     mask_dict_d = np.load(mask_dict_d_path,allow_pickle='TRUE').item()
-    dataset_dir = os.path.join(ds_dir, "derivatives", "PYRSA", "datasets", "sub-"+str(sub).zfill(2))
-    res_dir = os.path.join(ds_dir, "derivatives", "PYRSA", "noise", "sub-"+str(sub).zfill(2))
+    dataset_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "datasets", "sub-"+str(sub).zfill(2))
+    res_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "noise", "sub-"+str(sub).zfill(2))
     
     # Load datasets and 
     roi_h = 'FFC_left'
