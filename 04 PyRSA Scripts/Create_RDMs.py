@@ -5,101 +5,68 @@ Pipeline for generating pyrsa RDMs with precision matrices for crossnobis distan
 
 @author: alex
 """
-
-def stim_to_label(stim_list, label_dict, crop=False):
-    '''
-    Transform beta_id to object labels
-    
-    Inputs:
-    - stim_list (list): sorted list of all GLM predictors
-    - label_dict (dict): {synset ID : object label}
-    - crop (bool): Use only first term in object label before the comma
-
-    Output:
-    - label_list (list): sorted list of the stimulus object labels corresponding to GLM predictors
-    '''
-    label = []
-    
-    if crop:
-        for i in range(len(stim_list)):
-            synset = 'n0'+stim_list[i].split('.')[0]
-            label.append(label_dict[synset].split(',')[0])
-    else:
-        for i in range(len(stim_list)):
-            synset = 'n0'+stim_list[i].split('.')[0]    
-            label.append(label_dict[synset])
-    label_list = np.array(label)
-    return label_list
+def sort_invert_and_numerate_dict(dictionary):
+    inv_dict = {}
+    i = 0
+    values = list(dictionary.values())
+    values.sort()
+    for value in values:  
+        inv_dict.update({value: i})
+        i += 1
+    return inv_dict
 
 
-# def permute_rdm(rdm, p = None):
-#         """ Permute rows, columns and corresponding pattern descriptors of RDM matrices according to a permutation vector
-        
-#         Args:
-#             p (numpy array):
-#                permutation vector (values must be unique integers from 0 to n_cond of RDM matrix).
-#                If p = None, a random permutation vector is created.
-               
-#         Returns:
-#             rdm_p(pyrsa.rdm.RDMs): the rdm object with a permuted matrix and pattern descriptors
-
-#         """
-#         if p is None:
-#             p = np.random.permutation(rdm.n_cond)
-#             print("No permutation vector specified, performing random permutation.")
-        
-#         assert p.dtype == 'int', "permutation vector must have integer entries."
-#         assert min(p) == 0 and max(p) == rdm.n_cond-1, "permutation vector must have entries ranging from 0 to n_cond"
-#         assert len(np.unique(p)) == rdm.n_cond, "permutation vector must only have unique integer entries"
-        
-#         rdm_mats = rdm.get_matrices()
-#         descriptors = rdm.descriptors.copy()
-#         rdm_descriptors = rdm.rdm_descriptors.copy()
-#         pattern_descriptors = rdm.pattern_descriptors.copy()
-
-#         p_inv = np.arange(len(p))[np.argsort(p)] # To easily reverse permutation later
-#         descriptors.update({'p_inv': p_inv})
-#         rdm_mats = rdm_mats[:,p,:]
-#         rdm_mats = rdm_mats[:,:,p]
-#         stims = np.array(pattern_descriptors['stim'])
-#         pattern_descriptors.update({'stim': list(stims[p].astype(np.str_))})
-                
-#         rdms_p = pyrsa.rdm.RDMs(dissimilarities=rdm_mats,
-#                     descriptors=descriptors,
-#                     rdm_descriptors=rdm_descriptors,
-#                     pattern_descriptors=pattern_descriptors)
-#         return rdms_p
 
 ###############################################################################
 
 import glob
 import os
+import mask_utils
 import numpy as np
-import matplotlib.pyplot as plt
 import pyrsa
 
 # Set directories and specify ROIs
-ds_dir = "/home/alex/Datasets/ds001246/"
-txt_dir = "/home/alex/Datasets/templateflow/tpl-Glasser/HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt" #directory of mask descriptors
-label_dict = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
-n_subs = len(glob.glob(ds_dir + os.sep + "sub*"))
-beta_type = 'SPM_3' 
-rename_stim = True
-p = [0] # Permutation vector
+ds_dir          = "/home/alex/Datasets/ds001246/"
+n_subs          = len(glob.glob(ds_dir + os.sep + "sub*"))
+beta_type       = 'SPM_3' 
+freesurfer_mri  = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
+label_dict      = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
+label2num       = sort_invert_and_numerate_dict(label_dict)
+order           = ["n01443537","n01943899","n01976957","n02071294",  # water animals
+                   "n01621127", "n01846331", "n01858441", "n01677366", "n02190790", "n02274259",  # air and land animals (non-mammals)
+                   "n02128385", "n02139199", "n02416519", "n02437136", "n02437971", # land-Mammals
+                   "n02951358", "n03272010", "n03482252", "n03495258",  # humans in the picture
+                   "n04254777", "n03237416", "n03124170", "n03379051", "n04572121", # clothing 
+                   "n02824058", "n02882301", "n03345837", "n04387400", "n03716966", "n03584254", "n04533802", "n03626115", "n03941684", "n03954393", "n04507155", # small, handy objects 
+                   "n02797295", "n02690373", "n02916179", "n02950256", "n03122295", "n04252077", # machines
+                   "n03064758", "n04210120", "n04554684", "n03452741", "n03761084", # large indoor objects
+                   "n03710193", "n03455488", "n03767745", "n04297750"] # landmarks
 
-sub = 1
+p = [] # Permutation vector
+for i in range(len(order)):
+    p.append(label2num[label_dict[order[i]]])
+p = np.array(p)
+
+
+#sub = 1
 for sub in range(1, n_subs+1): 
-    # Set respective paths
-    mask_dir = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" + str(sub).zfill(2),"mri_glasser")
-    mask_dict_d_path = os.path.join(mask_dir,"sub-" + str(sub).zfill(2) + "_mask_dict_T2*w_disjunct.npy")
-    mask_dict_d = np.load(mask_dict_d_path,allow_pickle='TRUE').item()
-    dataset_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "datasets", "sub-"+str(sub).zfill(2))
-    res_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "noise", "sub-"+str(sub).zfill(2))
     
-    # Load datasets and 
-    roi_h = 'FFC_left'
-    for roi_h in mask_dict_d.keys():        
-       
+    # Set subject-specific paths
+    mask_dir = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" + str(sub).zfill(2), freesurfer_mri)
+    mask_dict = mask_utils.load_dict(os.path.join(mask_dir, "sub-" + str(sub).zfill(2) + "_mask_dict_EPI_disjoint.npy"))
+    dataset_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "datasets", "sub-"+str(sub).zfill(2))
+    res_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "noise", "sub-"+str(sub).zfill(2)) 
+    rdm_output_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "rdms", "sub-"+str(sub).zfill(2))
+    if not os.path.isdir(rdm_output_dir):
+        os.makedirs(rdm_output_dir)
+
+    rdms = []
+    
+    # roi_h = 'FFC_left'
+    # roi_h = 'V1_right'
+    # Load datasets
+    for roi_h in mask_dict.keys():        
+        
         # Load residuals and estimate precision matrix
         residuals_filename = os.path.join(res_dir,"Residuals_"+roi_h+"_"+beta_type+".npy")
         residuals = np.load(residuals_filename)
@@ -109,23 +76,26 @@ for sub in range(1, n_subs+1):
         dataset_filename = os.path.join(dataset_dir,"RSA_dataset_"+roi_h+"_"+beta_type)
         dataset = pyrsa.data.dataset.load_dataset(dataset_filename, file_type='hdf5')    
         
-        # Optionally rename stimulus IDs
-        if rename_stim:
-            stim_list = dataset.obs_descriptors['stim']
-            label_list = stim_to_label(stim_list, label_dict, crop=True)
-            dataset.obs_descriptors['stim'] = label_list
-        
         # Calculate RDM with crossnobis distance estimates    
         rdm = pyrsa.rdm.calc.calc_rdm(dataset, method='crossnobis', descriptor='stim', cv_descriptor='run', noise=precision_matrix)
         rdm_p = pyrsa.rdm.rdms.permute_rdms(rdm, p = p)
-        x = rdm_p.get_matrices()
+        rdm_p.rdm_descriptors = {'index':np.array([0]), 'ROI':np.array([roi_h])}
+         
+        # Save ROI RDM
         
-        # TODO: Remember to pull request change in calc_rdm 
-        pyrsa.vis.rdm_plot.show_rdm(rdm, do_rank_transform=False, pattern_descriptor='stim',
-             cmap=None, rdm_descriptor=None)
-        pyrsa.vis.rdm_plot.show_rdm(rdm_p, do_rank_transform=False, pattern_descriptor='stim',
-             cmap=None, rdm_descriptor=None)
-        
-        
+        rdm_filename = os.path.join(rdm_output_dir,beta_type+"_RDM_"+roi_h)
+        rdm_p.save(rdm_filename, file_type='hdf5')
+        print("Created ROI RDM:", rdm_filename)
+            
+        # Collect single RDMs
+        if isinstance(rdms, list):
+            rdms = rdm_p
+        else:
+            rdms.append(rdm_p)
+    
+    # Save subject RDM
+    rdm_filename = os.path.join(rdm_output_dir,beta_type+"_RDM")
+    rdms.save(rdm_filename, file_type='hdf5')
+    print("Created subject RDM:", rdm_filename)
         
      
