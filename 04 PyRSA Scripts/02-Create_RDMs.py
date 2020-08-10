@@ -76,23 +76,25 @@ import numpy as np
 import pyrsa
 
 # Set directories and specify ROIs
-ds_dir          = "/home/alex/Datasets/ds001246/"
-n_subs          = len(glob.glob(ds_dir + os.sep + "sub*"))
-beta_type       = 'SPM_6' 
-estimate_rel    = True
-get_precision   = 'total' #opts: 'run-wise', 'total'
-freesurfer_mri  = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
-label_dict      = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
-label2num       = sort_invert_and_numerate_dict(label_dict)
-order           = ["n01443537", "n01943899", "n01976957", "n02071294",                              # water animals
-                   "n01621127", "n01846331", "n01858441", "n01677366", "n02190790", "n02274259",    # air and land animals (non-mammals)
-                   "n02128385", "n02139199", "n02416519", "n02437136", "n02437971",                 # land-Mammals
-                   "n02951358", "n03272010", "n03482252", "n03495258",                              # humans in the picture
-                   "n04254777", "n03237416", "n03124170", "n03379051", "n04572121",                 # clothing 
-                   "n02824058", "n02882301", "n03345837", "n04387400", "n03716966", "n03584254", "n04533802", "n03626115", "n03941684", "n03954393", "n04507155", # small, handy objects 
-                   "n02797295", "n02690373", "n02916179", "n02950256", "n03122295", "n04252077",    # machines
-                   "n03064758", "n04210120", "n04554684", "n03452741", "n03761084",                 # large indoor objects
-                   "n03710193", "n03455488", "n03767745", "n04297750"]                              # landmarks
+ds_dir           = "/home/alex/Datasets/ds001246/"
+n_subs           = len(glob.glob(ds_dir + os.sep + "sub*"))
+beta_type        = 'SPM_6' 
+estimate_rel     = True
+oe_reliabilities = []
+get_precision    = 'run-wise' #opts: 'run-wise', 'total'
+calculate_rdm    = False
+freesurfer_mri   = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
+label_dict       = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
+label2num        = sort_invert_and_numerate_dict(label_dict)
+order            = ["n01443537", "n01943899", "n01976957", "n02071294",                              # water animals
+                    "n01621127", "n01846331", "n01858441", "n01677366", "n02190790", "n02274259",    # air and land animals (non-mammals)
+                    "n02128385", "n02139199", "n02416519", "n02437136", "n02437971",                 # land-Mammals
+                    "n02951358", "n03272010", "n03482252", "n03495258",                              # humans in the picture
+                    "n04254777", "n03237416", "n03124170", "n03379051", "n04572121",                 # clothing 
+                    "n02824058", "n02882301", "n03345837", "n04387400", "n03716966", "n03584254", "n04533802", "n03626115", "n03941684", "n03954393", "n04507155", # small, handy objects 
+                    "n02797295", "n02690373", "n02916179", "n02950256", "n03122295", "n04252077",    # machines
+                    "n03064758", "n04210120", "n04554684", "n03452741", "n03761084",                 # large indoor objects
+                    "n03710193", "n03455488", "n03767745", "n04297750"]                              # landmarks
 
 
 p = [] # Permutation vector
@@ -138,27 +140,29 @@ for sub in range(1, n_subs+1):
         # Estimate odd-even reliability
         if estimate_rel:
             oe_reliability = oe_split_reliability(dataset, residuals, l1_obs_desc='stim', l2_obs_desc='run', n_runs=35, get_precision=get_precision)
-        
-        # Calculate RDM with crossnobis distance estimates    
-        rdm = pyrsa.rdm.calc.calc_rdm(dataset, method='crossnobis', descriptor='stim', cv_descriptor='run', noise=precision)
-        rdm_p = pyrsa.rdm.rdms.permute_rdms(rdm, p = p)
-        rdm_p.rdm_descriptors = {'index':np.array([0]), 'ROI':np.array([roi_h])}
-         
-        # Save ROI RDM
-        
-        rdm_filename = os.path.join(rdm_output_dir,beta_type+"_RDM_"+roi_h)
-        rdm_p.save(rdm_filename, file_type='hdf5')
-        print("Created ROI RDM:", rdm_filename)
+            oe_reliabilities.append(oe_reliability)
+        if calculate_rdm:
+            # Calculate RDM with crossnobis distance estimates    
+            rdm = pyrsa.rdm.calc.calc_rdm(dataset, method='crossnobis', descriptor='stim', cv_descriptor='run', noise=precision)
+            rdm_p = pyrsa.rdm.rdms.permute_rdms(rdm, p = p)
+            rdm_p.rdm_descriptors = {'index':np.array([0]), 'ROI':np.array([roi_h])}
+             
+            # Save ROI RDM
             
-        # Collect single RDMs
-        if isinstance(rdms, list):
-            rdms = rdm_p
-        else:
-            rdms.append(rdm_p)
+            rdm_filename = os.path.join(rdm_output_dir,beta_type+"_RDM_"+roi_h)
+            rdm_p.save(rdm_filename, file_type='hdf5')
+            print("Created ROI RDM:", rdm_filename)
+                
+            # Collect single RDMs
+            if isinstance(rdms, list):
+                rdms = rdm_p
+            else:
+                rdms.append(rdm_p)
     
-    # Save subject RDM
-    rdm_filename = os.path.join(rdm_output_dir,beta_type+"_RDM")
-    rdms.save(rdm_filename, file_type='hdf5')
-    print("Created subject RDM:", rdm_filename)
+    if calculate_rdm:
+        # Save subject RDM
+        rdm_filename = os.path.join(rdm_output_dir,beta_type+"_RDM")
+        rdms.save(rdm_filename, file_type='hdf5')
+        print("Created subject RDM:", rdm_filename)
         
      
