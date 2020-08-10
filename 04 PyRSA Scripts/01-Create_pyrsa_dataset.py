@@ -198,7 +198,7 @@ import pyrsa
 
 # Data analysis parameters
 processing_mode  = 'both' # Options: 'datasets', 'residuals' or 'both'
-beta_type        = 'SPM_0' # 'SPM_0', 'SPM_3', 'SPM_6'
+beta_type        = 'SPM_3' # 'SPM_0', 'SPM_3', 'SPM_6'
 ses_type         = 'ses-perceptionTest'
 n_stim           = 50 # Use first n_stim beta coefficients
 
@@ -208,14 +208,13 @@ txt_dir          = "/home/alex/Datasets/templateflow/tpl-Glasser/HCP-MMP1_on_MNI
 spm_dir          = os.path.join(ds_dir, "derivatives", beta_type)
 freesurfer_mri   = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
 label_dict       = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
-target_ROIs      = ['V%d' % i for i in range(1,5)] + ['VMV%d' % i for i in range(1,4)] + ['PHA%d' % i for i in range(1,4)] + ['VVC', 'FFC', 'TF', 'PeEc', 'MT', 'MST']
 n_subs           = len(glob.glob(ds_dir + os.sep + "sub*"))
 
 
 
 ##############################################################################
-# sub=2
-for sub in range(3, n_subs+1):     
+# sub=1
+for sub in range(1, n_subs+1):     
     
     # Set output directories    
     ds_output_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "datasets", "sub-"+str(sub).zfill(2))
@@ -256,7 +255,7 @@ for sub in range(3, n_subs+1):
             
             # Save dataset and residuals array
             dataset_filename = os.path.join(ds_output_dir,"RSA_dataset_"+roi_h+"_"+beta_type)
-            dataset.save(dataset_filename, file_type='hdf5', overwrite=True)
+            dataset.save(dataset_filename, file_type='hdf5')
             print("Created pyrsa dataset:", dataset_filename)
         
         # Save pooled residuals
