@@ -545,11 +545,46 @@ def mask_and_get_SPM_residuals(mask, glm_dir, n_res=None, method = 'nilearn'):
         
     return residuals
 
+def apply_brain_mask(image, brain_mask):
+    '''
+    For a 3d or 4d image, apply a 3d brain mask and mark all voxels outside the mask as NaNs
+    '''
+    image_array = image.get_fdata()
+    brain_mask_array = brain_mask.get_fdata()
+    brain_mask_array = np.tile(brain_mask_array, (image_array.shape[3],1,1,1))
+    brain_mask_array = np.rollaxis(brain_mask_array, 0, 4)
+    image_array[np.invert(brain_mask_array.astype(bool))] = np.nan
+    image_array_brain_masked = np.multiply(brain_mask_array.astype(bool), image_array)
+    
+    return image_array_brain_masked
 
+def apply_roi_mask_4d(image, mask, brain_mask_path = None, method = 'nilearn'):
+    '''
+    Apply mask to a 4d image and store resulting vectors in a measurements array (later input for pyrsa.dataset())
 
-
-
-
+    '''
+    
+    # Apply brain mask
+    if isinstance(brain_mask_path, str):
+        brain_mask = nifti1.load(brain_mask_path)
+        image_array = apply_brain_mask(image, brain_mask)
+    else:
+        image_array = image.get_fdata()
+    
+    if method == 'nilearn':
+        image_tmp = nifti1.Nifti1Image(image_array, mask.affine.copy())
+        masked = masking.apply_mask(image_tmp, mask, dtype='f', smoothing_fwhm=None, ensure_finite=True)            
+    elif method == 'custom':
+    # Alternative to nilearn's implementation (allows for plotting of masked 3d image)
+        mask_array = mask.get_fdata()
+        masked = image_array[mask_array.astype(bool)]
+        masked = masked.T
+    elif method == '3d':
+        mask_array = mask.get_fdata()
+        image_masked = np.multiply(mask_array, image_array)
+        masked = nifti1.Nifti1Image(image_masked, mask.affine.copy())
+    
+    return masked
 
 #-------------------------- Miscellaneous
 
