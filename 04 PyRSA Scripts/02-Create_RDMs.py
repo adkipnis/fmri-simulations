@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Pipeline for generating pyrsa RDMs with precision matrices for crossnobis distance estimates
+Pipeline for generating pyrsa RDMs with precision matrices
+for crossnobis distance estimates
 
 @author: alex
 """
@@ -38,28 +39,46 @@ def oe_split_residuals(residuals, n_runs=35):
     odd_residuals = np.concatenate(odd_residuals_list, axis=0)
     even_residuals = np.concatenate(even_residuals_list, axis=0)
     
-    return odd_residuals, even_residuals, odd_residuals_list, even_residuals_list
+    return odd_residuals, even_residuals, odd_residuals_list, \
+        even_residuals_list
 
 
-def oe_split_reliability(dataset, residuals, l1_obs_desc='stim', l2_obs_desc='run', n_runs=35, get_precision='total'):
+def oe_split_reliability(dataset, residuals=None, l1_obs_desc='stim',
+                         l2_obs_desc='run', n_runs=35, get_precision='total'):
     # Split measurements
-    odd_dataset, even_dataset = pyrsa.data.dataset.nested_odd_even_split(dataset, l1_obs_desc, l2_obs_desc)
+    odd_dataset, even_dataset = pyrsa.data.dataset.nested_odd_even_split(
+        dataset, l1_obs_desc, l2_obs_desc)
     
     # Split residuals and get precision matrices
-    odd_residuals, even_residuals, odd_residuals_list, even_residuals_list = oe_split_residuals(residuals, n_runs=35)
+    if not isinstance(residuals, np.ndarray):
+        odd_precision = None
+        even_precision = None
+        get_precision = None
+    else:
+        odd_residuals, even_residuals, odd_residuals_list, even_residuals_list = \
+            oe_split_residuals(residuals, n_runs=35)
     
     if get_precision == 'total':
-        odd_precision = pyrsa.data.noise.prec_from_residuals(odd_residuals, dof=None)
-        even_precision = pyrsa.data.noise.prec_from_residuals(even_residuals, dof=None)
+        odd_precision = pyrsa.data.noise.prec_from_residuals(
+            odd_residuals)
+        even_precision = pyrsa.data.noise.prec_from_residuals(
+            even_residuals)
     elif get_precision == 'run-wise':
-        odd_precision = pyrsa.data.noise.prec_from_residuals(odd_residuals_list, dof=None)
-        even_precision = pyrsa.data.noise.prec_from_residuals(even_residuals_list, dof=None)
-           
+        odd_precision = pyrsa.data.noise.prec_from_residuals(
+            odd_residuals_list)
+        even_precision = pyrsa.data.noise.prec_from_residuals(
+            even_residuals_list)
+        
     # Calculate respective rdms
-    odd_rdm = pyrsa.rdm.calc.calc_rdm(odd_dataset, method='crossnobis', descriptor='stim', cv_descriptor='run', noise=odd_precision)
-    even_rdm = pyrsa.rdm.calc.calc_rdm(even_dataset, method='crossnobis', descriptor='stim', cv_descriptor='run', noise=even_precision)
+    odd_rdm = pyrsa.rdm.calc.calc_rdm(odd_dataset, method='crossnobis',
+                                      descriptor='stim', cv_descriptor='run',
+                                      noise=odd_precision)
+    even_rdm = pyrsa.rdm.calc.calc_rdm(even_dataset, method='crossnobis',
+                                       descriptor='stim', cv_descriptor='run',
+                                       noise=even_precision)
     
-    # Calculate Pearson's product moment correlation coefficient between vectorized rdms
+    # Calculate Pearson's product moment correlation coefficient
+    # between vectorized rdms
     odd_vector = odd_rdm.get_vectors()
     even_vector = even_rdm.get_vectors()
     pearson_r = np.corrcoef(odd_vector, even_vector, rowvar=True)[0,1]
@@ -81,8 +100,8 @@ n_subs           = len(glob.glob(ds_dir + os.sep + "sub*"))
 beta_type        = 'SPM_6' 
 estimate_rel     = True
 oe_reliabilities = []
-get_precision    = 'run-wise' #opts: 'run-wise', 'total'
-calculate_rdm    = False
+get_precision    = 'total' #opts: None, 'run-wise', 'total'
+calculate_rdm    = True
 freesurfer_mri   = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
 label_dict       = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
 label2num        = sort_invert_and_numerate_dict(label_dict)
@@ -102,55 +121,73 @@ for i in range(len(order)):
     p.append(label2num[label_dict[order[i]]])
 p = np.array(p)
 
-
+###############################################################################
 #sub = 1
 for sub in range(1, n_subs+1): 
     
     # Set subject-specific paths
-    mask_dir = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" + str(sub).zfill(2), freesurfer_mri)
-    mask_dict = mask_utils.load_dict(os.path.join(mask_dir, "sub-" + str(sub).zfill(2) + "_mask_dict_EPI_disjoint.npy"))
-    dataset_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "datasets", "sub-"+str(sub).zfill(2))
-    res_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "noise", "sub-"+str(sub).zfill(2)) 
-    rdm_output_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "rdms", "sub-"+str(sub).zfill(2))
+    mask_dir = os.path.join(
+        ds_dir, "derivatives", "freesurfer","sub-" + str(sub).zfill(2),
+        freesurfer_mri)
+    mask_dict = mask_utils.load_dict(os.path.join(
+        mask_dir, "sub-" + str(sub).zfill(2) + "_mask_dict_EPI_disjoint.npy"))
+    dataset_dir = os.path.join(
+        ds_dir, "derivatives", "PyRSA", "datasets", "sub-"+str(sub).zfill(2))
+    res_dir = os.path.join(
+        ds_dir, "derivatives", "PyRSA", "noise", "sub-"+str(sub).zfill(2)) 
+    rdm_output_dir = os.path.join(
+        ds_dir, "derivatives", "PyRSA", "rdms", "sub-"+str(sub).zfill(2))
     if not os.path.isdir(rdm_output_dir):
         os.makedirs(rdm_output_dir)
 
     rdms = []
     
-    # roi_h = 'FFC_right'
     # roi_h = 'V1_left'
     # Load datasets
     for roi_h in mask_dict.keys():        
         
-        # Load residuals and estimate precision matrix
-        residuals_filename = os.path.join(res_dir,"Residuals_"+roi_h+"_"+beta_type+".npy")
-        residuals = np.load(residuals_filename)
-        
         if get_precision == 'total':
-            precision = pyrsa.data.noise.prec_from_residuals(residuals, dof=None)
+            # Load residuals and estimate precision matrix
+            residuals_filename = os.path.join(
+                res_dir,"Residuals_"+roi_h+"_"+beta_type+".npy")
+            residuals = np.load(residuals_filename)
+            precision = pyrsa.data.noise.prec_from_residuals(
+                residuals, dof=None)
         elif get_precision == 'run-wise':
+            # Load residuals and estimate precision matrix
+            residuals_filename = os.path.join(
+                res_dir,"Residuals_"+roi_h+"_"+beta_type+".npy")
+            residuals = np.load(residuals_filename)
             runwise_residuals = runwise_split_residuals(residuals, n_runs=35)
-            precision = pyrsa.data.noise.prec_from_residuals(runwise_residuals, dof=None)
-        
+            precision = pyrsa.data.noise.prec_from_residuals(
+                runwise_residuals, dof=None)
+        else:
+            precision = None
         
         # Load dataset
-        dataset_filename = os.path.join(dataset_dir,"RSA_dataset_"+roi_h+"_"+beta_type)
-        dataset = pyrsa.data.dataset.load_dataset(dataset_filename, file_type='hdf5')    
+        dataset_filename = os.path.join(
+            dataset_dir,"RSA_dataset_"+roi_h+"_"+beta_type)
+        dataset = pyrsa.data.dataset.load_dataset(
+            dataset_filename, file_type='hdf5')    
         
         # Estimate odd-even reliability
         if estimate_rel:
-            oe_reliability = oe_split_reliability(dataset, residuals, l1_obs_desc='stim', l2_obs_desc='run', n_runs=35, get_precision=get_precision)
+            oe_reliability = oe_split_reliability(
+                dataset, residuals=precision, l1_obs_desc='stim',
+                l2_obs_desc='run', n_runs=35, get_precision=get_precision)
             oe_reliabilities.append(oe_reliability)
         if calculate_rdm:
             # Calculate RDM with crossnobis distance estimates    
-            rdm = pyrsa.rdm.calc.calc_rdm(dataset, method='crossnobis', descriptor='stim', cv_descriptor='run', noise=precision)
+            rdm = pyrsa.rdm.calc.calc_rdm(
+                dataset, method='crossnobis', descriptor='stim',
+                cv_descriptor='run', noise=None)
             rdm_p = pyrsa.rdm.rdms.permute_rdms(rdm, p = p)
-            rdm_p.rdm_descriptors = {'index':np.array([0]), 'ROI':np.array([roi_h])}
+            rdm_p.rdm_descriptors = {'index':np.array([0]),
+                                     'ROI':np.array([roi_h])}
              
             # Save ROI RDM
-            
             rdm_filename = os.path.join(rdm_output_dir,beta_type+"_RDM_"+roi_h)
-            rdm_p.save(rdm_filename, file_type='hdf5')
+            rdm_p.save(rdm_filename, file_type='hdf5', overwrite = True)
             print("Created ROI RDM:", rdm_filename)
                 
             # Collect single RDMs
@@ -162,7 +199,7 @@ for sub in range(1, n_subs+1):
     if calculate_rdm:
         # Save subject RDM
         rdm_filename = os.path.join(rdm_output_dir,beta_type+"_RDM")
-        rdms.save(rdm_filename, file_type='hdf5')
+        rdms.save(rdm_filename, file_type='hdf5', overwrite = True)
         print("Created subject RDM:", rdm_filename)
         
      
