@@ -58,16 +58,21 @@ def oe_split_reliability(dataset, residuals=None, l1_obs_desc='stim',
         odd_residuals, even_residuals, odd_residuals_list, even_residuals_list = \
             oe_split_residuals(residuals, n_runs=35)
     
-    if get_precision == 'total':
+    if get_precision == 'res-total':
         odd_precision = pyrsa.data.noise.prec_from_residuals(
             odd_residuals)
         even_precision = pyrsa.data.noise.prec_from_residuals(
             even_residuals)
-    elif get_precision == 'run-wise':
+    elif get_precision == 'res-run-wise':
         odd_precision = pyrsa.data.noise.prec_from_residuals(
             odd_residuals_list)
         even_precision = pyrsa.data.noise.prec_from_residuals(
             even_residuals_list)
+    elif get_precision == 'instance-based':
+        odd_precision = pyrsa.data.noise.prec_from_measurements(
+            odd_dataset)
+        even_precision = pyrsa.data.noise.prec_from_measurements(
+            even_dataset)
         
     # Calculate respective rdms
     odd_rdm = pyrsa.rdm.calc.calc_rdm(odd_dataset, method='crossnobis',
@@ -97,10 +102,10 @@ import pyrsa
 # Set directories and specify ROIs
 ds_dir           = "/home/alex/Datasets/ds001246/"
 n_subs           = len(glob.glob(ds_dir + os.sep + "sub*"))
-beta_type        = 'SPM_6' 
+beta_type        = 'Dual_GLM' 
 estimate_rel     = True
 oe_reliabilities = []
-get_precision    = 'total' #opts: None, 'run-wise', 'total'
+get_precision    = 'instance-based' #opts: None, 'res-total', 'res-run-wise', 'instance-based'
 calculate_rdm    = True
 freesurfer_mri   = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
 label_dict       = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
@@ -123,7 +128,7 @@ p = np.array(p)
 
 ###############################################################################
 #sub = 1
-for sub in range(1, n_subs+1): 
+for sub in range(2, n_subs+1): 
     
     # Set subject-specific paths
     mask_dir = os.path.join(
@@ -145,15 +150,21 @@ for sub in range(1, n_subs+1):
     # roi_h = 'V1_left'
     # Load datasets
     for roi_h in mask_dict.keys():        
+        # Load dataset
+        dataset_filename = os.path.join(
+            dataset_dir,"RSA_dataset_"+roi_h+"_"+beta_type)
+        dataset = pyrsa.data.dataset.load_dataset(
+            dataset_filename, file_type='hdf5')    
         
-        if get_precision == 'total':
+        # Load / calculate precision matrix
+        if get_precision == 'res-total':
             # Load residuals and estimate precision matrix
             residuals_filename = os.path.join(
                 res_dir,"Residuals_"+roi_h+"_"+beta_type+".npy")
             residuals = np.load(residuals_filename)
             precision = pyrsa.data.noise.prec_from_residuals(
                 residuals, dof=None)
-        elif get_precision == 'run-wise':
+        elif get_precision == 'res-run-wise':
             # Load residuals and estimate precision matrix
             residuals_filename = os.path.join(
                 res_dir,"Residuals_"+roi_h+"_"+beta_type+".npy")
@@ -163,13 +174,7 @@ for sub in range(1, n_subs+1):
                 runwise_residuals, dof=None)
         else:
             precision = None
-        
-        # Load dataset
-        dataset_filename = os.path.join(
-            dataset_dir,"RSA_dataset_"+roi_h+"_"+beta_type)
-        dataset = pyrsa.data.dataset.load_dataset(
-            dataset_filename, file_type='hdf5')    
-        
+    
         # Estimate odd-even reliability
         if estimate_rel:
             oe_reliability = oe_split_reliability(

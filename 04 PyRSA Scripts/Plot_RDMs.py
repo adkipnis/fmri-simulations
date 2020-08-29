@@ -126,7 +126,7 @@ import pyrsa
 # Set directories and specify ROIs
 ds_dir          = "/home/alex/Datasets/ds001246/"
 n_subs          = len(glob.glob(ds_dir + os.sep + "sub*"))
-beta_type       = 'SPM_6' 
+beta_type       = 'R1_GLM' 
 freesurfer_mri  = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
 plot_roi        = False
 plot_subject    = True

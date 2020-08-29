@@ -77,7 +77,7 @@ for i in range(n_sim):
     true_patterns = np.tile(ground_truth,(n_observations,1))
     
     # Simulate Noise 
-    power_s = np.var(ground_truth) + np.square(np.mean(ground_truth))
+    power_s = np.var(ground_truth) + np.square(np.mean(ground_truth)) #Direkt ausrechenbar
     noise_sd = np.sqrt(power_s/SNR)
     if multivariate_noise:
         # ...under multivariate normal distribution

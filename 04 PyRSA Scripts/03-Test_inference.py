@@ -9,7 +9,8 @@ Pipeline for testing inference on average ground truth RDM
 def collect_ROI_RDMs(n_subs, roi_h, ds_dir, beta_type):
     roi_rdms = []
     for sub in range(1, n_subs+1): 
-        rdm_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "rdms", "sub-"+str(sub).zfill(2))
+        rdm_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "rdms", "sub-"+
+                               str(sub).zfill(2))
         rdm_filename = os.path.join(rdm_dir, beta_type+"_RDM_"+roi_h)
         rdm = pyrsa.rdm.rdms.load_rdm(rdm_filename, file_type='hdf5')
         
@@ -18,8 +19,6 @@ def collect_ROI_RDMs(n_subs, roi_h, ds_dir, beta_type):
             roi_rdms = rdm
         else:
             roi_rdms.append(rdm)
-    
-    
     return roi_rdms
 
 
@@ -49,12 +48,13 @@ def mean_noise_celings(n_subs, ds_dir, beta_type, roi_h_list):
     for roi_h in roi_h_list:
         # Collect ROI-specific RDM from each subject and average them
         roi_rdms = collect_ROI_RDMs(n_subs, roi_h, ds_dir, beta_type)
-        noise_min, noise_max = pyrsa.inference.boot_noise_ceiling(roi_rdms, method='cosine', rdm_descriptor='index')
+        noise_min, noise_max = pyrsa.inference.boot_noise_ceiling(roi_rdms,
+                               method='cosine', rdm_descriptor='index')
         noise_min_sup.append(noise_min)
         noise_max_sup.append(noise_max)
-    mean_lower = np.mean(noise_min_sup)
-    mean_upper = np.mean(noise_max_sup)
-    return mean_lower, mean_upper
+    median_lower = np.median(noise_min_sup)
+    median_upper = np.median(noise_max_sup)
+    return median_lower, median_upper, noise_min_sup, noise_max_sup
 
 ###############################################################################
 
@@ -67,14 +67,18 @@ import pyrsa
 # Set directories and specify ROIs
 ds_dir          = "/home/alex/Datasets/ds001246/"
 n_subs          = len(glob.glob(ds_dir + os.sep + "sub*"))
-beta_type       = 'SPM_3' 
-freesurfer_mri  = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
-mask_dir        = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" + str(1).zfill(2), freesurfer_mri)
-mask_dict       = mask_utils.load_dict(os.path.join(mask_dir, "sub-" + str(1).zfill(2) + "_mask_dict_EPI_disjoint.npy"))
+beta_type       = 'Dual_GLM'
+#directory in which subject-specific volumetric ROI masks are saved by FS
+freesurfer_mri  = "mri_glasser" 
+mask_dir        = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" +
+                               str(1).zfill(2), freesurfer_mri)
+mask_dict       = mask_utils.load_dict(os.path.join(mask_dir, "sub-" +
+                               str(1).zfill(2) + "_mask_dict_EPI_disjoint.npy"))
 roi_h_list      = list(mask_dict.keys())
 
-# Get mean noise ceilings for all ROIs
-mean_lower, mean_upper = mean_noise_celings(n_subs, ds_dir, beta_type, roi_h_list)
+# Get median noise ceilings for all ROIs
+median_lower, median_upper, noise_min_sup, noise_max_sup = mean_noise_celings(
+    n_subs, ds_dir, beta_type, roi_h_list)
    
 # Setup correlational inference
 # roi_h = np.random.choice(roi_h_list, 1)[0]
@@ -89,7 +93,9 @@ for roi_h in roi_h_list:
     
     # Perform correlational inference with bootstrapping over stimuli
     fixed_models = collect_fixed_models(n_subs, ds_dir, beta_type, other_rois)
-    fixed_models.append(pyrsa.model.ModelFixed(roi_h, ground_truth)) # add the "ground truth"
-    results_fixed = pyrsa.inference.eval_bootstrap_pattern(fixed_models, data_rdm, method='corr')
+    # add the "ground truth" model
+    fixed_models.append(pyrsa.model.ModelFixed(roi_h, ground_truth)) 
+    results_fixed = pyrsa.inference.eval_bootstrap_pattern(fixed_models,
+                                                    data_rdm, method='corr')
     pyrsa.vis.plot_model_comparison(results_fixed)
     
