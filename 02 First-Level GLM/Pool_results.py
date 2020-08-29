@@ -122,7 +122,7 @@ from nibabel import nifti1
 
 # Data analysis parameters
 processing_mode   = 'both' # Options: 'datasets', 'residuals' or 'both'
-spm_type          = 'SPM_6'
+spm_type          = 'Dual_GLM'
 task              = 'perception'
 stimulus_set      = 'Test'
 ses_type          = 'ses-' + task + stimulus_set

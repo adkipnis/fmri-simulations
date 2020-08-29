@@ -7,9 +7,9 @@
 clc
 clear all
 format long g
-addpath('/moto/home/ak4572/spm12');
-addpath('/moto/home/ak4572/GLM_Utils/'); % path to utility functions for this script
-Dirs.BIDSdir = '/moto/nklab/projects/ds001246/';
+addpath('/home/alex/matlab/Toolboxes/spm12');
+addpath('/home/alex/matlab/SPM Batchscripts/GLM_Utils/'); % path to utility functions for this script
+Dirs.BIDSdir = '/home/alex/Datasets/ds001246/';
 
 %------ Options
 Opts = struct();
@@ -20,14 +20,14 @@ Opts = load_task_json(Opts, Dirs); % add task-related MRI specs to Opts
 Opts.pool_inference = true; % Pool runs for model estimation and inference (don't change this, use *_pooled version instead!)
 Opts.rewrite = true; % overwrites previously saved outputs
 Opts.resmooth = false; % redo smoothing even if smoothed images exist
-Opts.fwhm_s = 3; % Full-width at half maximum of Gaussian spatial high pass filter in mm - set to 0 if no spatial smoothing is wished
+Opts.fwhm_s = 0; % Full-width at half maximum of Gaussian spatial high pass filter in mm - set to 0 if no spatial smoothing is wished
 Opts.fwhm_t = Inf; % Full-width at half maximum of Gaussian temporal high pass filter in seconds - set to Inf if no hpf is wished
 Opts.smooth_prefix = strcat('fwhm_',num2str(Opts.fwhm_s), '_'); % Add prefix to smoothed files
 Opts.hrf_derivs = [0 0]; % Estimate coefficients for HRF derivatives (first and second)
 Opts.thresh_desc = 'FWE'; % options: 'FWE', 'FDR', 'none' -> control FWER or FDR before including voxels to clusters
 Opts.alpha_level = 0.05; % For statistical testing of clusters
 Opts.save_fitted_response = 'none'; % options: 'predicted', 'corrected', 'none'
-Opts.delete_estimates = false; % Cleans up beta and residual .nii files when finished
+Opts.delete_estimates = true; % Cleans up beta and residual .nii files when finished
 
 %------ Confounds and directories
 Opts.test_noise_regressors = true; % perform additional F-Tests on groups of noise regressors
@@ -92,7 +92,7 @@ for i = 1 : Dirs.n_subs
     fprintf('Parameter estimation...\n')
     spm_estimate = {};
     spm_estimate.matlabbatch{1}.spm.stats.fmri_est.spmmat(1) = {[Dirs.subject_results_dir filesep 'SPM.mat']};  
-    spm_estimate.matlabbatch{1}.spm.stats.fmri_est.write_residuals = 0; % write_residuals                
+    spm_estimate.matlabbatch{1}.spm.stats.fmri_est.write_residuals = 1; % write_residuals                
     spm_estimate.matlabbatch{1}.spm.stats.fmri_est.method.Classical = 1; % ReML
 
     spm_jobman('run',spm_estimate.matlabbatch)

@@ -24,7 +24,7 @@ function Dirs = add_nii_files(Dirs, Opts, i, s, n)
         rmdir(Dirs.results_dir, 's');
     end
     spm_mkdir(Dirs.results_dir);
-    Dirs.run_scans = spm_select('Expand',nii_file); % create list with path to nifti file for every sample/scan
+    Dirs.run_scans = spm_select('Expand', nii_file); % create list with path to nifti file for every sample/scan
     
   
 end
