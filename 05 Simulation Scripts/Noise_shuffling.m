@@ -1,6 +1,6 @@
 %==========================================================================
 %     Noise shuffling and scaling while preserving serial autocorrelations
-%     (w/ AR(1) model)
+%     and spatial structure (w/ AR(1) model)
 %==========================================================================
 
 %% 1. Preparations
@@ -28,6 +28,11 @@ Opts.rewrite = true; % overwrites previously saved outputs
 Dirs = parse_bids_base_sim(Dirs.BIDSdir); % Parse BIDS directory
 Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');
 
+if Opts.n_permutations > factorial(178)
+    warning('All possible permutations taken, reducing n_permutations')
+    Opts.n_permutations = factorial(178)
+end
+
 for i = 1 %: Dirs.n_subs
     Dirs = parse_bids_sub(Dirs, Opts, i);
     r = 0;
@@ -35,6 +40,7 @@ for i = 1 %: Dirs.n_subs
         Dirs = create_filelists_from_bids(Dirs, i, s);
 
         for n = 1 %: Dirs.n_runs
+            tic
             r = r+1;
             Dirs = add_res_files(Dirs, Opts, i, s, n);
             
@@ -42,7 +48,7 @@ for i = 1 %: Dirs.n_subs
             [~, res_mat, mask_vec, Opts] = load_residual_matrix(Dirs, Opts);
             y = res_mat(mask_vec,:)';
             
-            % Get AR(1) predictions and residuals
+            % Get AR(n) predictions (w/ least squares) and residuals
             [y_ar, eps, ~] = ar_n_bare_metal(y, Opts.ar_n);
             
             % Get and apply Opts.n_permutations permutations to AR(1)
@@ -60,7 +66,7 @@ for i = 1 %: Dirs.n_subs
             [y_glm, ~, Opts] = get_GLM_predicted_timeseries(mask_vec, Dirs, Opts);
             S = repaste_to_4d(res_mat, y_glm, mask_vec, Opts);   
             save_as_nii(S, Dirs, Opts, i, r, 'Signal');
-
+            toc
         end
     end
 end
