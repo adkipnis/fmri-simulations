@@ -2,7 +2,8 @@ function level_1_GLM(nii_file, i, s, n, p, Dirs, Opts)
     % Set some Dirs
     Dirs.results_dir = char(fullfile(Dirs.outputdir, ['sub-', ...
         Dirs.sub_list{i}], Dirs.sesh_list{s}, ['run-', sprintf('%02s', ...
-        string(n))], ['GLM_Data_perm_', Opts.sim_type, '_', sprintf('%04s', string(p))]));
+        string(n))], ['GLM_Data_perm_', Opts.sim_type, '_', sprintf('%04s', ...
+        string(p)), '_snr_', char(string(Opts.snr))]));
     if Opts.rewrite && exist(Dirs.results_dir,'dir')
         rmdir(Dirs.results_dir, 's');
     end
