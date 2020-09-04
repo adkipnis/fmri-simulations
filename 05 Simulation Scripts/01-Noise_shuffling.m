@@ -17,7 +17,7 @@ addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'GLM_Utils'));
 addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
 
 Opts = struct();
-Opts.n_permutations = 10;
+Opts.n_permutations = 2;
 Opts.ar_n = 1;
 Opts.task = 'perception';
 Opts.subtask = 'Test';
@@ -40,7 +40,7 @@ for i = 1 %: Dirs.n_subs
         Dirs = create_filelists_from_bids(Dirs, i, s);
 
         for n = 1 %: Dirs.n_runs
-            tic
+            
             r = r+1;
             Dirs = add_res_files(Dirs, Opts, i, s, n);
             
@@ -60,13 +60,13 @@ for i = 1 %: Dirs.n_subs
             % shape of the nii object and save it
             E_perm = repaste_to_5d(res_mat, y_perm, ...
                 mask_vec, Opts);
-            save_as_nii(E_perm, Dirs, Opts, i, r, 'Res_perm');
+            save_as_nii(E_perm, Dirs, Opts, i, r, 1, 'Res_perm');
 
             % Get predicted time series of GLM, reshape and save them
             [y_glm, ~, Opts] = get_GLM_predicted_timeseries(mask_vec, Dirs, Opts);
             S = repaste_to_4d(res_mat, y_glm, mask_vec, Opts);   
-            save_as_nii(S, Dirs, Opts, i, r, 'Signal');
-            toc
+            save_as_nii(S, Dirs, Opts, i, r, 1, 'Signal');
+            
         end
     end
 end

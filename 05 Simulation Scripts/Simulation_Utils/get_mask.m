@@ -1,4 +1,4 @@
-function mask = get_mask(Dirs)
+function [mask, Dirs] = get_mask(Dirs)
     input_file_names = extractfield(Dirs.input_files, 'name');
     input_file_locs = extractfield(Dirs.input_files, 'folder');
     mask_filt = logical(contains(input_file_names, 'mask'));
