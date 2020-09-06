@@ -1,4 +1,6 @@
 function level_1_GLM(nii_file, i, s, n, p, Dirs, Opts)
+%     spm('Defaults','fMRI'); %Initialise SPM fmri
+%     spm_jobman('initcfg');  %Initialise SPM batch mode    
     % Set some Dirs
     Dirs.results_dir = char(fullfile(Dirs.outputdir, ['sub-', ...
         Dirs.sub_list{i}], Dirs.sesh_list{s}, ['run-', sprintf('%02s', ...
@@ -9,7 +11,7 @@ function level_1_GLM(nii_file, i, s, n, p, Dirs, Opts)
     end
     spm_mkdir(Dirs.results_dir);
     Dirs.run_scans = spm_select('Expand', nii_file); % create list with path to nifti file for every sample/scan
-    Dirs.design_multi = fullfile(Dirs.output_dir_pendant, 'spm_design_multi.mat');
+    Dirs.design_multi = fullfile(Dirs.input_dir, 'spm_design_multi.mat');
 
     % Model specification
     spm_specify = struct();
@@ -20,7 +22,7 @@ function level_1_GLM(nii_file, i, s, n, p, Dirs, Opts)
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.RT = Opts.TR;
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t = 50; % Microtime resoultion (here: number of slices)
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t0 = 25; % Microtime onset (here: middle slice)            
-    spm_specify.matlabbatch{1}.spm.stats.fmri_spec.mask = fullfile(Dirs.output_dir, 'mask.nii'); 
+    spm_specify.matlabbatch{1}.spm.stats.fmri_spec.mask = fullfile(Dirs.input_dir, 'mask.nii'); 
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.sess(1).multi = {char(Dirs.design_multi)};
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0]; 
