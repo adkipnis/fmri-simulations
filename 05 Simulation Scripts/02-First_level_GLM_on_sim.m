@@ -25,7 +25,8 @@ Opts.session_type = [Opts.task, Opts.subtask];
 Opts = load_task_json(Opts, Dirs); % add task-related MRI specs to Opts
 Opts.pool_inference = false;
 Opts.rewrite = true; % overwrites previously saved outputs
-Dirs = parse_bids_base_sim(Dirs.BIDSdir); % Parse BIDS directory
+Dirs = parse_bids_base_name(Dirs.BIDSdir, 'Data_perm'); % Parse BIDS directory
+Dirs.inputdir = fullfile(Dirs.BIDSdir, 'derivatives', 'Noise_perm');
 Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');
 spm('Defaults','fMRI'); %Initialise SPM fmri
 spm_jobman('initcfg');  %Initialise SPM batch mode
@@ -38,9 +39,8 @@ for i = 1 %: Dirs.n_subs
         Dirs = create_filelists_from_bids(Dirs, i, s);
         
         for n = 1 %: Dirs.n_runs
-            tic
             r = r+1;
-            Dirs = add_sim_files(Dirs, i, s, n);
+            Dirs = add_sim_files(Dirs, Opts, i, s, n);
             [S_mat_masked, S_mat, mask_vec, Opts] = ...
                 get_masked_signal(Dirs,Opts);
             S_power = get_timeseries_power(S_mat_masked, Opts);
@@ -59,7 +59,7 @@ for i = 1 %: Dirs.n_subs
                     break
                 end
             end
-            toc
+            
         end
     end
 end

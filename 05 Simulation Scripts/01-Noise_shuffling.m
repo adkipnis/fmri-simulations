@@ -25,7 +25,7 @@ Opts.session_type = [Opts.task, Opts.subtask];
 Opts.n_stim_betas = 50;
 Opts.pool_inference = false;
 Opts.rewrite = true; % overwrites previously saved outputs
-Dirs = parse_bids_base_sim(Dirs.BIDSdir); % Parse BIDS directory
+Dirs = parse_bids_base_name(Dirs.BIDSdir, 'Noise_perm'); % Parse BIDS directory
 Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');
 
 if Opts.n_permutations > factorial(178)

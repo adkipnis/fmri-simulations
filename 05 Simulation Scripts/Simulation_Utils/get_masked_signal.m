@@ -1,5 +1,5 @@
 function [S_mat_masked, S_mat, mask_vec, Opts] = get_masked_signal(Dirs, Opts)
-    cd(Dirs.output_dir)
+    cd(Dirs.input_dir)
     mask = niftiread('mask.nii');
     mask_vec = logical(mask(:));
     S = niftiread(Dirs.signal_file{1});
