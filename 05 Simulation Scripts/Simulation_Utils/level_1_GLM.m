@@ -1,11 +1,9 @@
-function level_1_GLM(nii_file, i, s, n, p, Dirs, Opts)
-%     spm('Defaults','fMRI'); %Initialise SPM fmri
-%     spm_jobman('initcfg');  %Initialise SPM batch mode    
+function level_1_GLM(nii_file, i, s, n, p, snr, Dirs, Opts)
     % Set some Dirs
     Dirs.results_dir = char(fullfile(Dirs.outputdir, ['sub-', ...
         Dirs.sub_list{i}], Dirs.sesh_list{s}, ['run-', sprintf('%02s', ...
         string(n))], ['GLM_Data_perm_', Opts.sim_type, '_', sprintf('%04s', ...
-        string(p)), '_snr_', char(string(Opts.snr))]));
+        string(p)), '_snr_', char(string(snr))]));
     if Opts.rewrite && exist(Dirs.results_dir,'dir')
         rmdir(Dirs.results_dir, 's');
     end
@@ -22,7 +20,7 @@ function level_1_GLM(nii_file, i, s, n, p, Dirs, Opts)
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.RT = Opts.TR;
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t = 50; % Microtime resoultion (here: number of slices)
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t0 = 25; % Microtime onset (here: middle slice)            
-    spm_specify.matlabbatch{1}.spm.stats.fmri_spec.mask = fullfile(Dirs.input_dir, 'mask.nii'); 
+    spm_specify.matlabbatch{1}.spm.stats.fmri_spec.mask = {fullfile(Dirs.input_dir, 'mask.nii')}; 
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.sess(1).multi = {char(Dirs.design_multi)};
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
     spm_specify.matlabbatch{1}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0]; 

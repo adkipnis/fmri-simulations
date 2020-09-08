@@ -8,16 +8,16 @@
 clc
 clear all
 format long g
-Dirs.BIDSdir = '/home/alex/Datasets/ds001246/';
-matlab_docs = '/home/alex/matlab/';
+Dirs.BIDSdir = '/moto/nklab/projects/ds001246/';
+matlab_docs = '/moto/home/ak4572/';
 cd(matlab_docs);
-addpath(genpath(fullfile(matlab_docs, 'Toolboxes', 'nifti_utils')));
-addpath(fullfile(matlab_docs, 'Toolboxes', 'spm12'));
-addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'GLM_Utils'));
-addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
+addpath(genpath(fullfile(matlab_docs, 'nifti_utils')));
+addpath(fullfile(matlab_docs, 'spm12'));
+addpath(fullfile(matlab_docs, 'GLM_Utils'));
+addpath(fullfile(matlab_docs, 'Simulation_Utils'));
 
 Opts = struct();
-Opts.n_permutations = 2;
+Opts.n_permutations = 1;
 Opts.ar_n = 1;
 Opts.task = 'perception';
 Opts.subtask = 'Test';
@@ -32,14 +32,14 @@ if Opts.n_permutations > factorial(178)
     warning('All possible permutations taken, reducing n_permutations')
     Opts.n_permutations = factorial(178)
 end
-
-for i = 1 %: Dirs.n_subs
+tic
+for i = 1 : Dirs.n_subs
     Dirs = parse_bids_sub(Dirs, Opts, i);
     r = 0;
-    for s = 1 %: Dirs.n_ses  
+    for s = 1 : Dirs.n_ses  
         Dirs = create_filelists_from_bids(Dirs, i, s);
 
-        for n = 1 %: Dirs.n_runs
+        for n = 1 : Dirs.n_runs
             
             r = r+1;
             Dirs = add_res_files(Dirs, Opts, i, s, n);
@@ -70,3 +70,4 @@ for i = 1 %: Dirs.n_subs
         end
     end
 end
+toc
