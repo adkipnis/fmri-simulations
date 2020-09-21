@@ -6,12 +6,12 @@ Pipeline for testing inference on average ground truth RDM
 @author: alex
 """
 
-def collect_RDMs(ds_dir, n_subs = 1,  precision_type = None, beta_type = None):
+def collect_RDMs(ds_dir, n_subs = 1,  beta_type = None):
     roi_rdms = []
     for sub in range(1, n_subs+1):
         fname = os.path.join(
             ds_dir, "derivatives", "PyRSA", "rdms", "sub-" +
-            str(sub).zfill(2), "RDM_" + precision_type + "_" + beta_type)
+            str(sub).zfill(2), "RDM_" + beta_type)
         rdm = pyrsa.rdm.rdms.load_rdm(fname, file_type='hdf5')
         
         # Collect single RDMs
@@ -29,7 +29,7 @@ def average_RDMs(rdms):
     average_rdm = pyrsa.rdm.rdms.RDMs(average_matrix,
                           dissimilarity_measure=rdms.dissimilarity_measure,
                           descriptors=rdms.descriptors,
-                          rdm_descriptors = {'ROI' : np.array([rdms.rdm_descriptors['ROI'][0] + '_mean']),
+                          rdm_descriptors = {'roi' : np.array([rdms.rdm_descriptors['roi'][0] + '_mean']),
                                              'index' : np.array([rdms.rdm_descriptors['index'][0]])},
                           pattern_descriptors=rdms.pattern_descriptors)
     return average_rdm        
@@ -40,7 +40,7 @@ def collect_model_rdms(rdms, other_rois, snr = None, perm = None, n_runs = None)
     for other_roi in other_rois:
         other_rdms = rdms.subset('snr_rel', snr).subset(
             'perm', perm).subset('n_runs', n_runs).subset(
-            'ROI', other_roi)
+            'roi', other_roi)
         model_rdm = average_RDMs(other_rdms)
         if isinstance(model_rdms, list):
             model_rdms = model_rdm
@@ -132,11 +132,11 @@ def results_summary(fixed_results):
     # Putting everything together
     summary = {"GT": str(gt_model),
                "winner": str(winner_model[0]),
-               "recovered": recovery[0],
+               "recovered": int(recovery[0]),
                "n_sig_better": sum(better),
                "nc_low": noise_ceilings[0],
                "nc_high": noise_ceilings[1],
-               "above_nc": above_nc,
+               "above_nc": int(above_nc),
                "dif_from_nc_sig": nc_significance}
     for multi in [pe, stds, pw_sigs]:
         summary.update(multi)        
@@ -179,7 +179,6 @@ mask_dir        = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" +
 mask_dict       = mask_utils.load_dict(os.path.join(mask_dir, "sub-" +
                                str(1).zfill(2) + "_mask_dict_EPI_disjoint.npy"))
 roi_h_list      = list(mask_dict.keys())
-precision_type  = 'instance-based' #opts: None, 'res-total', 'res-run-wise', 'instance-based'
 n_stim          = [5, 10, 25, 50]
 stim_sampling   = ['serial', 'random']
 
@@ -187,81 +186,88 @@ stim_sampling   = ['serial', 'random']
 df = pd.DataFrame()
 df_idx = -1
 rdms = collect_RDMs(
-    ds_dir, n_subs = n_subs, precision_type = precision_type,
-    beta_type = beta_type)
+    ds_dir, n_subs = n_subs, beta_type = beta_type)
+prec_types  = np.unique(rdms.rdm_descriptors['prec_type'])
 run_subsets = np.unique(rdms.rdm_descriptors['n_runs'])
 snr_range   = np.unique(rdms.rdm_descriptors['snr_rel'])
 perms_range = np.unique(rdms.rdm_descriptors['perm'])
 
-# snr = 1
-for snr in snr_range:
-    # perm = 1
-    for perm in perms_range:
-        # roi_h = 'V1_left'
-        for roi_h in roi_h_list:    
-            # n_runs = 8
-            for n_runs in run_subsets: 
-                summary = {}            
-                model_rdms_list, data_rdms_list = [], []
-    
-                # Collect data RDMs and get GT by averaging data for resp. ROI
-                other_rois = np.setdiff1d(roi_h_list, roi_h)
-                data_rdms = rdms.subset('snr_rel', snr).subset(
-                    'perm', perm).subset('n_runs', n_runs).subset('ROI', roi_h)
-                ground_truth = average_RDMs(data_rdms)
-                
-                # Collect model RDMs (cross-subject averages for each ROI)
-                model_rdms_full = collect_model_rdms(
-                    rdms, other_rois, snr = snr, perm = perm, n_runs = n_runs)  
-                model_rdms_full.append(ground_truth)
-                
-                # Pattern subset model RDMs
-                model_rdms_list, data_rdms_list, factors = pattern_subset_rdms_sparse(
-                    model_rdms_full, data_rdms, n_stim, stim_sampling)
-                n_subsets = len(model_rdms_list)
-                
-                # Do flexible inference for each subset
-                # comb = 0
-                for comb in range(n_subsets):
-                    fixed_models = []
-                    fixed_results = []
-                    model_rdms = model_rdms_list[comb]
-                    data_rdms_sub = data_rdms_list[comb]
+# prec_type = 'instance_based'
+for prec_type in prec_types:
+    # snr = 1
+    for snr in snr_range:
+        # perm = 1
+        for perm in perms_range:
+            # roi_h = 'V1_left'
+            for roi_h in roi_h_list:    
+                # n_runs = 8
+                for n_runs in run_subsets: 
+                    summary = {}            
+                    model_rdms_list, data_rdms_list = [], []
+        
+                    # Collect data RDMs and get GT by averaging data for resp. ROI
+                    other_rois = np.setdiff1d(roi_h_list, roi_h)
+                    data_rdms = rdms.subset('prec_type', prec_type).subset(
+                        'snr_rel', snr).subset('perm', perm).subset(
+                            'n_runs', n_runs).subset('roi', roi_h)
+                    ground_truth = average_RDMs(data_rdms)
                     
-                    # Model selection
-                    for i_model in np.unique(other_rois):
-                        i_model += '_mean'
-                        fixed_models.append(pyrsa.model.ModelFixed(i_model,
-                            model_rdms.subset('ROI', i_model)))
-                    fixed_models.append(pyrsa.model.ModelFixed(
-                        roi_h, model_rdms.subset('ROI', roi_h + '_mean'))) 
+                    # Collect model RDMs (cross-subject averages for each ROI)
+                    model_rdms_full = collect_model_rdms(
+                        rdms, other_rois, snr = snr, perm = perm, n_runs = n_runs)  
+                    model_rdms_full.append(ground_truth)
                     
-                    # ModelFixed class rearranges pattern descriptor indices, and
-                    # we need to redo this for data_rdms_sub, otherwise
-                    # eval_bootstrap_pattern will throw up an exception
-                    data_rdms_sub.pattern_descriptors['index'] = np.arange(
-                        data_rdms_sub.n_cond)
+                    # Pattern subset model RDMs
+                    model_rdms_list, data_rdms_list, factors = pattern_subset_rdms_sparse(
+                        model_rdms_full, data_rdms, n_stim, stim_sampling)
+                    n_subsets = len(model_rdms_list)
                     
-                    # Perform flexible inference with bootstrapping
-                    fixed_results = pyrsa.inference.eval_bootstrap_pattern(
-                        fixed_models, data_rdms_sub, method='corr')
-                    
-                    # pyrsa.vis.plot_model_comparison(fixed_results)
-                    summary = results_summary(fixed_results)
-                    oe = dict(zip(["sub-" + str(i+1).zfill(2) + "_data_rdm_oe_rel"
-                                   for i in range(data_rdms_sub.n_rdm)],
-                                  data_rdms_sub.rdm_descriptors['oe_rel']))
-                    summary.update(oe)
-                    summary.update({"pattern_subset" : int(factors[comb, 0]),
-                                    "subset_type" : factors[comb, 1],
-                                    "snr_rel" : snr,
-                                    "perm_num" : perm,
-                                    "n_runs" : n_runs,
-                                    "prec_type" : precision_type})
-                    df_idx += 1
-                    summary_df = pd.DataFrame(summary, index=[df_idx])
-                    df = df.append(summary_df)
-                    
+                    # Do flexible inference for each subset
+                    # comb = 0
+                    for comb in range(n_subsets):
+                        fixed_models = []
+                        fixed_results = []
+                        model_rdms = model_rdms_list[comb]
+                        data_rdms_sub = data_rdms_list[comb]
+                        
+                        # Model selection
+                        for i_model in np.unique(other_rois):
+                            i_model += '_mean'
+                            fixed_models.append(pyrsa.model.ModelFixed(i_model,
+                                model_rdms.subset('roi', i_model)))
+                        fixed_models.append(pyrsa.model.ModelFixed(
+                            roi_h, model_rdms.subset('roi', roi_h + '_mean'))) 
+                        
+                        # ModelFixed class rearranges pattern descriptor indices, and
+                        # we need to redo this for data_rdms_sub, otherwise
+                        # eval_bootstrap_pattern will throw up an exception
+                        data_rdms_sub.pattern_descriptors['index'] = np.arange(
+                            data_rdms_sub.n_cond)
+                        
+                        # Perform flexible inference with bootstrapping
+                        fixed_results = pyrsa.inference.eval_bootstrap_pattern(
+                            fixed_models, data_rdms_sub, method='corr')
+                        
+                        # pyrsa.vis.plot_model_comparison(fixed_results)
+                        summary = results_summary(fixed_results)
+                        oe = dict(zip(["sub-" + str(i+1).zfill(2) + "_data_rdm_oe_rel"
+                                       for i in range(data_rdms_sub.n_rdm)],
+                                      data_rdms_sub.rdm_descriptors['oe_rel']))
+                        roi_size = dict(zip(["sub-" + str(i+1).zfill(2) + "_GT_roi_size"
+                                       for i in range(data_rdms_sub.n_rdm)],
+                                      data_rdms_sub.rdm_descriptors['roi_size']))
+                        for multi in [oe, roi_size]:
+                            summary.update(multi) 
+                        summary.update({"pattern_subset" : int(factors[comb, 0]),
+                                        "pattern_subset_type" : factors[comb, 1],
+                                        "prec_type" : prec_type,
+                                        "snr_rel" : snr,
+                                        "perm_num" : perm,
+                                        "n_runs" : n_runs})
+                        df_idx += 1
+                        summary_df = pd.DataFrame(summary, index=[df_idx])
+                        df = df.append(summary_df)
+                        
 csv_fname = os.getcwd() + os.sep + "results_" + \
     strftime("%Y-%m-%d_%H-%M", gmtime()) + ".csv"           
 df.to_csv(csv_fname)                

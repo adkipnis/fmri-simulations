@@ -116,9 +116,9 @@ n_subs           = len(glob.glob(ds_dir + os.sep + "sub*"))
 beta_type        = "data_perm_mixed"
 estimate_rel     = True
 oe_reliabilities = []
-get_precision    = 'instance-based' #opts: None, 'res-total', 'res-run-wise', 'instance-based'
+precision_types  = ['instance-based', 'res-total'] #opts: None, 'res-total', 'res-run-wise', 'instance-based'
 calculate_rdm    = True
-remove_ds        = True
+remove_ds        = False
 freesurfer_mri   = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
 mask_dir         = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" +
                                str(1).zfill(2), freesurfer_mri)
@@ -148,7 +148,7 @@ run_subsets      = [2**(i+1) for i in range(5)]
 
 ###############################################################################
 #sub = 5
-for sub in range(1, 3): 
+for sub in range(3, n_subs+1): 
     
     # Set subject-specific paths
     dataset_dir = os.path.join(
@@ -165,80 +165,83 @@ for sub in range(1, 3):
     # Load datasets
     for snr in snr_range:
         for perm in range(1, n_perms+1):
-            # roi_h = 'V1_left'
-            for roi_h in roi_h_list:        
-                # Load dataset
-                dataset_filename = os.path.join(
-                    dataset_dir, "RSA_dataset_" + roi_h + "_" + beta_type +
-                    "_" + str(perm).zfill(4) + "_snr_" + str(snr))
-                dataset_full = pyrsa.data.dataset.load_dataset(
-                    dataset_filename, file_type='hdf5')    
-                
-                # Load / calculate precision matrix
-                residuals_filename = os.path.join(
-                    res_dir, "Residuals_"+ beta_type + "_" +
-                    str(perm).zfill(4) + "_snr_" + str(snr))
-                
-                # Precision matrix
-                if get_precision == 'res-total':
-                    # Load residuals and estimate precision matrix
-                    residuals = np.load(residuals_filename)
-                    precision = pyrsa.data.noise.prec_from_residuals(
-                        residuals, dof=None)
-                elif get_precision == 'res-run-wise':
-                    # Load residuals and estimate precision matrix
-                    residuals = np.load(residuals_filename)
-                    runwise_residuals = runwise_split_residuals(
-                        residuals, n_runs=35)
-                    precision = pyrsa.data.noise.prec_from_residuals(
-                        runwise_residuals, dof=None)
-                else:
-                    precision = None
-
-                # Subset datasets
-                dataset_list = subset_dataset(dataset_full, run_subsets)
-                n_subsets = len(dataset_list)
-                
-                for ds_num in range(n_subsets):
-                    dataset = dataset_list[ds_num]
-                    n_runs = run_subsets[ds_num]
+            for get_precision in precision_types:
+                # roi_h = 'V1_left'
+                for roi_h in roi_h_list:        
+                    # Load dataset
+                    dataset_filename = os.path.join(
+                        dataset_dir, "RSA_dataset_" + roi_h + "_" + beta_type +
+                        "_" + str(perm).zfill(4) + "_snr_" + str(snr))
+                    dataset_full = pyrsa.data.dataset.load_dataset(
+                        dataset_filename, file_type='hdf5')    
                     
-                    # Estimate odd-even reliability
-                    oe_reliability = np.nan
+                    # Load / calculate precision matrix
+                    residuals_filename = os.path.join(
+                        res_dir, "Residuals_" + roi_h + "_" + beta_type +
+                        "_" + str(perm).zfill(4) + "_snr_" + str(snr)) + ".npy"
                     
-                    if estimate_rel and n_runs > 2:
-                        oe_reliability = oe_split_reliability(
-                            dataset, residuals=precision, l1_obs_desc='stim',
-                            l2_obs_desc='run', n_runs=n_runs, get_precision=get_precision)
-                        # oe_reliabilities.append(oe_reliability)
+                    # Precision matrix
+                    if get_precision == 'res-total':
+                        # Load residuals and estimate precision matrix
+                        residuals = np.load(residuals_filename)
+                        precision = pyrsa.data.noise.prec_from_residuals(
+                            residuals, dof=None)
+                    elif get_precision == 'res-run-wise':
+                        # Load residuals and estimate precision matrix
+                        residuals = np.load(residuals_filename)
+                        runwise_residuals = runwise_split_residuals(
+                            residuals, n_runs=35)
+                        precision = pyrsa.data.noise.prec_from_residuals(
+                            runwise_residuals, dof=None)
+                    else:
+                        precision = None
+    
+                    # Subset datasets
+                    dataset_list = subset_dataset(dataset_full, run_subsets)
+                    n_subsets = len(dataset_list)
                     
-                    # Calculate RDM with crossnobis distance estimates    
-                    if calculate_rdm:
-                        rdm = pyrsa.rdm.calc.calc_rdm(
-                            dataset, method='crossnobis', descriptor='stim',
-                            cv_descriptor='run', noise=None)
-                        rdm_p = pyrsa.rdm.rdms.permute_rdms(rdm, p = p)
-                        rdm_p.rdm_descriptors = {'index': np.array([0]),
-                                                 'sub': np.array([sub]),
-                                                 'ROI': np.array([roi_h]),
-                                                 'oe_rel': np.array([oe_reliability]),
-                                                 'perm': np.array([perm]),
-                                                 'snr_rel': np.array([snr]),
-                                                 'n_runs': np.array([n_runs])}
-                            
-                        # Collect single RDMs
-                        if isinstance(rdms, list):
-                            rdms = rdm_p
-                        else:
-                            rdms.append(rdm_p)
+                    for ds_num in range(n_subsets):
+                        dataset = dataset_list[ds_num]
+                        n_runs = run_subsets[ds_num]
+                        
+                        # Estimate odd-even reliability
+                        oe_reliability = np.nan
+                        
+                        if estimate_rel and n_runs > 2:
+                            oe_reliability = oe_split_reliability(
+                                dataset, residuals=precision, l1_obs_desc='stim',
+                                l2_obs_desc='run', n_runs=n_runs, get_precision=get_precision)
+                            # oe_reliabilities.append(oe_reliability)
+                        
+                        # Calculate RDM with crossnobis distance estimates    
+                        if calculate_rdm:
+                            rdm = pyrsa.rdm.calc.calc_rdm(
+                                dataset, method='crossnobis', descriptor='stim',
+                                cv_descriptor='run', noise=None)
+                            rdm_p = pyrsa.rdm.rdms.permute_rdms(rdm, p = p)
+                            rdm_p.rdm_descriptors = {'index': np.array([0]),
+                                                     'sub': np.array([sub]),
+                                                     'prec_type': np.array([get_precision]),
+                                                     'roi': np.array([roi_h]),
+                                                     'roi_size': np.array(
+                                                         [dataset.channel_descriptors['positions'].shape[0]]),
+                                                     'oe_rel': np.array([oe_reliability]),
+                                                     'perm': np.array([perm]),
+                                                     'snr_rel': np.array([snr]),
+                                                     'n_runs': np.array([n_runs])}
+                                
+                            # Collect single RDMs
+                            if isinstance(rdms, list):
+                                rdms = rdm_p
+                            else:
+                                rdms.append(rdm_p)
     if remove_ds:
         shutil.rmtree(dataset_dir)
         shutil.rmtree(res_dir)
             
     if calculate_rdm:
         # Save subject RDM
-        rdm_filename = os.path.join(rdm_output_dir, "RDM_" + get_precision +
-                                    "_" + beta_type)
+        rdm_filename = os.path.join(rdm_output_dir, "RDM_" + beta_type)
         rdms.save(rdm_filename, file_type='hdf5', overwrite = True)
         print("Created subject RDM:", rdm_filename)
         

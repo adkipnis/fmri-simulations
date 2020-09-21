@@ -241,7 +241,7 @@ spm_dir          = os.path.join(ds_dir, "derivatives", spm_type)
 freesurfer_mri   = "mri_glasser"                                                
 label_dict       = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),
                            allow_pickle='TRUE').item()
-n_subs           = len(glob.glob(ds_dir + os.sep + "sub*"))
+n_subs           = len(glob.glob(spm_dir + os.sep + "sub*"))
 
 
 ##############################################################################
