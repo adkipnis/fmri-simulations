@@ -224,7 +224,7 @@ spm_type          = 'Data_perm'
 task              = 'perception'
 stimulus_set      = 'Test'
 ses_type          = 'ses-' + task + stimulus_set
-estimate_cronbach = True
+estimate_cronbach = False
 cronbachs_list    = []
 save_dataset      = True
 snr_range         = [0.5, 1, 2]
@@ -246,7 +246,7 @@ n_subs           = len(glob.glob(ds_dir + os.sep + "sub*"))
 
 ##############################################################################
 
-for sub in range(2, n_subs+1):     
+for sub in range(1, n_subs+1):     
     
     # Set output directories    
     ds_output_dir = os.path.join(ds_dir, "derivatives", "PyRSA", "datasets",
@@ -272,8 +272,7 @@ for sub in range(2, n_subs+1):
     # Collect measurements as well as respective descriptors
     glm_dir = os.path.join(spm_dir, "sub-"+str(sub).zfill(2)) 
     
-    # for snr in snr_range:
-    for snr in [2]:    
+    for snr in snr_range:
         for perm in range(1, n_perms+1):
             if processing_mode in ['datasets', 'both']:
                 signal_4d = None
@@ -351,7 +350,8 @@ for sub in range(2, n_subs+1):
                         
                     if processing_mode in ['both', 'residuals']:
                         residuals_filename = os.path.join(res_output_dir,
-                                              "Residuals"+ "_data_perm_mixed_"
+                                              "Residuals_" + roi_h 
+                                              + "_data_perm_mixed_"
                                               + str(perm).zfill(4) + "_snr_" +
                                               str(snr))
                         np.save(residuals_filename, residuals_cleaned)
