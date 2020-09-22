@@ -119,27 +119,29 @@ def results_summary(fixed_results):
     nc_significance = p[gt_model_idx]
     
     # Column names for output arrays
-    pe_names = np.core.defchararray.add(
-        model_names, np.repeat("_point_est", len(point_estimators)))
-    pe = dict(zip(pe_names, point_estimators))
-    std_names = np.core.defchararray.add(
-        model_names, np.repeat("_std", len(standard_deviations)))
-    stds = dict(zip(std_names, standard_deviations))
-    pw_sig_names = np.core.defchararray.add(
-        model_names, np.repeat("_vs_GT", len(better)))
-    pw_sigs = dict(zip(pw_sig_names[:-1], better[:-1]))
+    # pe_names = np.core.defchararray.add(
+        # model_names, np.repeat("_point_est", len(point_estimators)))
+    # pe = dict(zip(pe_names, point_estimators))
+    # std_names = np.core.defchararray.add(
+        # model_names, np.repeat("_std", len(standard_deviations)))
+    # stds = dict(zip(std_names, standard_deviations))
+    # pw_sig_names = np.core.defchararray.add(
+        # model_names, np.repeat("_vs_GT", len(better)))
+    # pw_sigs = dict(zip(pw_sig_names[:-1], better[:-1]))
     
     # Putting everything together
     summary = {"GT": str(gt_model),
                "winner": str(winner_model[0]),
+               "point_est": point_estimators[winner_idx],
+               "std": standard_deviations[winner_idx],
                "recovered": int(recovery[0]),
                "n_sig_better": sum(better),
                "nc_low": noise_ceilings[0],
                "nc_high": noise_ceilings[1],
                "above_nc": int(above_nc),
                "dif_from_nc_sig": nc_significance}
-    for multi in [pe, stds, pw_sigs]:
-        summary.update(multi)        
+    # for multi in [pe, stds, pw_sigs]:
+    #     summary.update(multi)        
     return summary
 
 
@@ -179,10 +181,12 @@ mask_dir        = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" +
 mask_dict       = mask_utils.load_dict(os.path.join(mask_dir, "sub-" +
                                str(1).zfill(2) + "_mask_dict_EPI_disjoint.npy"))
 roi_h_list      = list(mask_dict.keys())
+mask_dict       = None
 n_stim          = [5, 10, 25, 50]
 stim_sampling   = ['serial', 'random']
 
 ###############################################################################
+results_list = []
 df = pd.DataFrame()
 df_idx = -1
 rdms = collect_RDMs(
@@ -267,8 +271,12 @@ for prec_type in prec_types:
                         df_idx += 1
                         summary_df = pd.DataFrame(summary, index=[df_idx])
                         df = df.append(summary_df)
+                        results_list.append(fixed_results)
                         
 csv_fname = os.getcwd() + os.sep + "results_" + \
     strftime("%Y-%m-%d_%H-%M", gmtime()) + ".csv"           
-df.to_csv(csv_fname)                
+df.to_csv(csv_fname)
+npy_fname =  os.getcwd() + os.sep + "results_" + \
+    strftime("%Y-%m-%d_%H-%M", gmtime()) + ".npy"   
+np.save(npy_fname, results_list)                
 # df_2 = pd.read_csv(csv_fname, index_col=0)

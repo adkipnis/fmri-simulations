@@ -125,7 +125,7 @@ mask_dir         = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" +
 mask_dict        = mask_utils.load_dict(os.path.join(mask_dir, "sub-" +
                                str(1).zfill(2) + "_mask_dict_EPI_disjoint.npy"))
 roi_h_list       = list(mask_dict.keys())
-label_dict       = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),allow_pickle='TRUE').item()
+label_dict       = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"), allow_pickle='TRUE').item()
 label2num        = sort_invert_and_numerate_dict(label_dict)
 order            = ["n01443537", "n01943899", "n01976957", "n02071294",                              # water animals
                     "n01621127", "n01846331", "n01858441", "n01677366", "n02190790", "n02274259",    # air and land animals (non-mammals)
@@ -148,7 +148,7 @@ run_subsets      = [2**(i+1) for i in range(5)]
 
 ###############################################################################
 #sub = 5
-for sub in range(3, n_subs+1): 
+for sub in range(1, n_subs+1): 
     
     # Set subject-specific paths
     dataset_dir = os.path.join(
