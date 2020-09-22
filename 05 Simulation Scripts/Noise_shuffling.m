@@ -13,11 +13,10 @@ matlab_docs = '/home/alex/matlab/';
 cd(matlab_docs);
 addpath(genpath(fullfile(matlab_docs, 'Toolboxes', 'nifti_utils')));
 addpath(fullfile(matlab_docs, 'Toolboxes', 'spm12'));
-addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'GLM_Utils'));
 addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
 
 Opts = struct();
-Opts.n_permutations = 1;
+Opts.n_permutations = 2;
 Opts.ar_n = 1;
 Opts.task = 'perception';
 Opts.subtask = 'Test';
@@ -28,19 +27,14 @@ Opts.rewrite = true; % overwrites previously saved outputs
 Dirs = parse_bids_base_name(Dirs.BIDSdir, 'Noise_perm'); % Parse BIDS directory
 Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');
 
-if Opts.n_permutations > factorial(178)
-    warning('All possible permutations taken, reducing n_permutations')
-    Opts.n_permutations = factorial(178)
-end
-
 for i = 1 %: Dirs.n_subs
     Dirs = parse_bids_sub(Dirs, Opts, i);
     r = 0;
     for s = 1 %: Dirs.n_ses  
-        Dirs = create_filelists_from_bids(Dirs, i, s);
+        Dirs = get_runs(Dirs, s);
 
-        for n = 1 %: Dirs.n_runs
-            tic
+        for n = 1 : Dirs.n_runs
+            
             r = r+1;
             Dirs = add_res_files(Dirs, Opts, i, s, n);
             
@@ -66,7 +60,7 @@ for i = 1 %: Dirs.n_subs
             [y_glm, ~, Opts] = get_GLM_predicted_timeseries(mask_vec, Dirs, Opts);
             S = repaste_to_4d(res_mat, y_glm, mask_vec, Opts);   
             save_as_nii(S, Dirs, Opts, i, r, 1, 'Signal');
-            toc
+            
         end
     end
 end

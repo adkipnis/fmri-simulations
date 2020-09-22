@@ -8,6 +8,8 @@ function level_1_GLM(nii_file, i, s, n, p, snr, Dirs, Opts)
         rmdir(Dirs.results_dir, 's');
     end
     spm_mkdir(Dirs.results_dir);
+    copyfile(fullfile(Dirs.output_dir_pendant,'spm_beta_ids.txt'), ...
+        Dirs.results_dir);
     Dirs.run_scans = spm_select('Expand', nii_file); % create list with path to nifti file for every sample/scan
     Dirs.design_multi = fullfile(Dirs.input_dir, 'spm_design_multi.mat');
 

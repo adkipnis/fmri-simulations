@@ -2,7 +2,7 @@
 #
 #
 #SBATCH --account=nklab          # The account name for the job.
-#SBATCH --job-name=Data_sim    # The job name.
+#SBATCH --job-name=full_sim    # The job name.
 #SBATCH -c 8                     # The number of cpu cores to use.
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -19,3 +19,6 @@ matlab -nodisplay -nosplash - nodesktop -r "cd /moto/home/ak4572/; try, run ('/m
 module load anaconda/3-5.3.1
 source activate fmri-sim
 python 01-Pool_simulation_results_moto.py
+python 02-Create_sim_pyrsa_dataset_moto.py
+python 03-Create_sim_RDMs_moto.py
+python 04-Test_sim_fixed_inference_moto.py

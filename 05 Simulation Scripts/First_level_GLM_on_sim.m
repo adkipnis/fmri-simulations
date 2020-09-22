@@ -12,7 +12,7 @@ matlab_docs = '/home/alex/matlab/';
 cd(matlab_docs);
 addpath(genpath(fullfile(matlab_docs, 'Toolboxes', 'nifti_utils')));
 addpath(fullfile(matlab_docs, 'Toolboxes', 'spm12'));
-addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'GLM_Utils'));
+% addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'GLM_Utils'));
 addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
 
 Opts = struct();
@@ -32,15 +32,14 @@ Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');
 spm('Defaults','fMRI'); %Initialise SPM fmri
 spm_jobman('initcfg');  %Initialise SPM batch mode
 
-tic
 for i = 1 %: Dirs.n_subs
     Dirs = parse_bids_sub(Dirs, Opts, i);
     r = 0;
-    
+
     for s = 1 %: Dirs.n_ses  
-        Dirs = create_filelists_from_bids(Dirs, i, s);
+        Dirs = get_runs(Dirs, s);
         
-        for n = 1 %: Dirs.n_runs
+        for n = 1 : Dirs.n_runs
             
             r = r+1;
             Dirs = add_sim_files(Dirs, Opts, i, s, n);
@@ -76,4 +75,3 @@ for i = 1 %: Dirs.n_subs
         end
     end
 end
-toc
