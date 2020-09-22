@@ -115,19 +115,17 @@ import numpy as np
 import pyrsa
 
 # Set directories and specify ROIs
-ds_dir           = "/home/alex/Datasets/ds001246/"
-n_subs           = len(glob.glob(ds_dir + os.sep + "sub*"))
+ds_dir           = '/moto/nklab/projects/ds001246/'
+n_subs           = 5
 beta_type        = "data_perm_mixed"
 estimate_rel     = True
 oe_reliabilities = []
 precision_types  = ['instance-based', 'res-total', 'res-univariate'] #opts: None, 'res-total', 'res-run-wise', 'instance-based', 'res-univariate'
 calculate_rdm    = True
-remove_ds        = False
-freesurfer_mri   = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
-mask_dir         = os.path.join(ds_dir, "derivatives", "freesurfer","sub-" +
-                               str(1).zfill(2), freesurfer_mri)
-mask_dict        = mask_utils.load_dict(os.path.join(mask_dir, "sub-" +
-                               str(1).zfill(2) + "_mask_dict_EPI_disjoint.npy"))
+remove_ds        = True
+mask_dict        = mask_utils.load_dict(
+    os.path.join(ds_dir, "derivatives", "Masks", "sub-" + str(1).zfill(2)
+                 + "_mask_dict_EPI_disjoint.npy"))
 roi_h_list       = list(mask_dict.keys())
 label_dict       = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"), allow_pickle='TRUE').item()
 label2num        = sort_invert_and_numerate_dict(label_dict)
@@ -152,6 +150,7 @@ run_subsets      = [2**(i+1) for i in range(5)]
 ###############################################################################
 #sub = 5
 for sub in range(1, n_subs+1): 
+    
     rdms = []
     
     # Set subject-specific paths
@@ -163,8 +162,9 @@ for sub in range(1, n_subs+1):
         ds_dir, "derivatives", "PyRSA", "rdms", "sub-"+str(sub).zfill(2))
     if not os.path.isdir(rdm_output_dir):
         os.makedirs(rdm_output_dir)
+        
+    perm_range = get_n_perm(dataset_dir)    
     
-    perm_range = get_n_perm(dataset_dir)
     
     # Load datasets
     for snr in snr_range:

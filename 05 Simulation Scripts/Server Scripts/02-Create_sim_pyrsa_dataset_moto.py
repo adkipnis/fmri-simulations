@@ -235,15 +235,13 @@ save_dataset      = True
 snr_range         = [0.5, 1, 2]
 delete_inputs     = True
 
-
 # Set directories, specify ROIs and load dictionary for labels
-ds_dir           = "/home/alex/Datasets/ds001246/"
+ds_dir           = '/moto/nklab/projects/ds001246/'
 #directory of mask descriptors
-txt_dir          = "/home/alex/Datasets/templateflow/tpl-Glasser/"+ \
-                    "HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt"                    
+txt_dir          = os.path.join(ds_dir, "HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt")                    
 spm_dir          = os.path.join(ds_dir, "derivatives", spm_type)
 #directory in which subject-specific volumetric ROI masks are saved by FS
-freesurfer_mri   = "mri_glasser"                                                
+mask_dir         = os.path.join(ds_dir, "derivatives", "Masks")                                            
 label_dict       = np.load(os.path.join(ds_dir, "custom_synset_dictionary.npy"),
                            allow_pickle='TRUE').item()
 n_subs           = len(glob.glob(spm_dir + os.sep + "sub*"))
@@ -264,9 +262,6 @@ for sub in range(1, n_subs+1):
         os.makedirs(res_output_dir)
 
     # Load mask dictionaries and 4d image
-    mask_dir = os.path.join(
-        ds_dir, "derivatives", "freesurfer","sub-" + 
-        str(sub).zfill(2), freesurfer_mri)
     mask_dict = mask_utils.load_dict(
         os.path.join(mask_dir, "sub-" +str(sub).zfill(2)
                      + "_mask_dict_EPI_disjoint.npy"))
@@ -274,31 +269,29 @@ for sub in range(1, n_subs+1):
         os.path.join(mask_dir, "sub-" + str(sub).zfill(2)
                      + "_voxel_IDs_dict_EPI_disjoint.npy"))
     voxel_ids_dict_tmp = voxel_ids_dict.copy()
-    
     # Collect measurements as well as respective descriptors
     glm_dir = os.path.join(spm_dir, "sub-"+str(sub).zfill(2)) 
-    
     perm_range = get_perm_range(glm_dir)
     
     for snr in snr_range:
         for perm in perm_range:
             if processing_mode in ['datasets', 'both']:
                 signal_4d = None
-                signal_path = os.path.join(glm_dir, "sub-"+str(sub).zfill(2)+ "_" +
-                                           task +"_" + stimulus_set +
-                                           "_data_perm_mixed_" + str(perm).zfill(4)+
-                                           "_snr_" + str(snr) + "_signal.nii.gz")
-                descriptors_path = os.path.join(glm_dir, "sub-"+str(sub).zfill(2)+
-                                                "_" + task + "_" + stimulus_set +
-                                                "_signal.csv")
+                signal_path = os.path.join(
+                    glm_dir, "sub-"+str(sub).zfill(2)+ "_" + task +"_" +
+                    stimulus_set + "_data_perm_mixed_" + str(perm).zfill(4)+
+                    "_snr_" + str(snr) + "_signal.nii.gz")
+                descriptors_path = os.path.join(
+                    glm_dir, "sub-"+str(sub).zfill(2)+ "_" + task + "_" +
+                    stimulus_set + "_signal.csv")
                 signal_4d = nifti1.load(signal_path)
             
             if processing_mode in ['residuals', 'both']:
                 noise_4d = None
-                noise_path = os.path.join(glm_dir, "sub-"+str(sub).zfill(2)+ "_" +
-                                          task +"_" + stimulus_set +
-                                           "_data_perm_mixed_" + str(perm).zfill(4)+
-                                           "_snr_" + str(snr) + "_noise.nii.gz")
+                noise_path = os.path.join(
+                    glm_dir, "sub-"+str(sub).zfill(2)+ "_" + task +"_" +
+                    stimulus_set + "_data_perm_mixed_" + str(perm).zfill(4)+
+                    "_snr_" + str(snr) + "_noise.nii.gz")
                 noise_4d = nifti1.load(noise_path)
                    
             # Generate and save pyrsa dataset and pooled residuals for each ROI
@@ -321,10 +314,10 @@ for sub in range(1, n_subs+1):
                 # (artifact of mask smoothing, resampling and thresholding)
                 measurements_cleaned, residuals_cleaned, voxel_ids_cleaned = [],[],[]
                 measurements_cleaned, residuals_cleaned, voxel_ids_cleaned = \
-                    remove_empty_voxels_pipeline(measurements = measurements,
-                                                 residuals = residuals,
-                                                 voxel_ids = voxel_ids_dict[roi_h],
-                                                 nan_threshold = 0.01)
+                    remove_empty_voxels_pipeline(
+                        measurements = measurements, residuals = residuals,
+                        voxel_ids = voxel_ids_dict[roi_h],
+                        nan_threshold = 0.01)
                 voxel_ids_dict_tmp[roi_h] = voxel_ids_cleaned
                 measurements = None
                 residuals = None
@@ -366,7 +359,6 @@ for sub in range(1, n_subs+1):
                         print("Created residuals dataset:", residuals_filename)
                 measurements_cleaned = None
                 residuals_cleaned = None
-    
+                
     if delete_inputs:
         shutil.rmtree(glm_dir)
-            

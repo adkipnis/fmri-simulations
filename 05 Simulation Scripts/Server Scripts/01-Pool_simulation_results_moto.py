@@ -140,9 +140,9 @@ n_perms           = 1
 delete_inputs     = True
 
 # Set directories, specify ROIs and load dictionary for labels
-ds_dir           = "/home/alex/Datasets/ds001246/"
+ds_dir           = '/moto/nklab/projects/ds001246/'
 spm_dir          = os.path.join(ds_dir, "derivatives", spm_type)
-n_subs           = len(glob.glob(spm_dir + os.sep + "sub*"))
+n_subs           = len(glob.glob(ds_dir + os.sep + "sub*"))
 
 ##############################################################################
 
