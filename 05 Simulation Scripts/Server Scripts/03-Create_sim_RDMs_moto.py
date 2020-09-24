@@ -48,7 +48,7 @@ def oe_split_residuals(residuals, n_runs=35):
 
 
 def oe_split_reliability(dataset, residuals=None, l1_obs_desc='stim',
-                         l2_obs_desc='run', n_runs=35, get_precision='total'):
+                         l2_obs_desc='run', n_runs=35, get_precision='res-total'):
     # Split measurements
     odd_dataset, even_dataset = pyrsa.data.dataset.nested_odd_even_split(
         dataset, l1_obs_desc, l2_obs_desc)
@@ -62,7 +62,7 @@ def oe_split_reliability(dataset, residuals=None, l1_obs_desc='stim',
         odd_residuals, even_residuals, odd_residuals_list, even_residuals_list = \
             oe_split_residuals(residuals, n_runs=35)
     
-    if get_precision == 'res-total':
+    if get_precision in ['res-total', 'res-univariate]':
         odd_precision = pyrsa.data.noise.prec_from_residuals(
             odd_residuals)
         even_precision = pyrsa.data.noise.prec_from_residuals(
@@ -190,7 +190,7 @@ for sub in range(1, n_subs+1):
                         residuals = np.load(residuals_filename)
                         precision = pyrsa.data.noise.prec_from_residuals(
                             residuals, dof=None)
-                        if get_precision == 'res_univariate':
+                        if get_precision == 'res-univariate':
                            precision = np.multiply(
                                precision, np.identity(len(precision)))
                     elif get_precision == 'res-run-wise':
