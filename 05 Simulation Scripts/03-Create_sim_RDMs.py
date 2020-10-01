@@ -48,7 +48,7 @@ def oe_split_residuals(residuals, n_runs=35):
 
 
 def oe_split_reliability(dataset, residuals=None, l1_obs_desc='stim',
-                         l2_obs_desc='run', n_runs=35, get_precision='total'):
+                         l2_obs_desc='run', n_runs=35, get_precision='res-total'):
     # Split measurements
     odd_dataset, even_dataset = pyrsa.data.dataset.nested_odd_even_split(
         dataset, l1_obs_desc, l2_obs_desc)
@@ -60,23 +60,14 @@ def oe_split_reliability(dataset, residuals=None, l1_obs_desc='stim',
         get_precision = None
     else:
         odd_residuals, even_residuals, odd_residuals_list, even_residuals_list = \
-            oe_split_residuals(residuals, n_runs=35)
+            oe_split_residuals(residuals, n_runs = n_runs)
     
-    if get_precision == 'res-total':
-        odd_precision = pyrsa.data.noise.prec_from_residuals(
-            odd_residuals)
-        even_precision = pyrsa.data.noise.prec_from_residuals(
-            even_residuals)
-    elif get_precision == 'res-run-wise':
-        odd_precision = pyrsa.data.noise.prec_from_residuals(
-            odd_residuals_list)
-        even_precision = pyrsa.data.noise.prec_from_residuals(
-            even_residuals_list)
-    elif get_precision == 'instance-based':
-        odd_precision = pyrsa.data.noise.prec_from_measurements(
-            odd_dataset)
-        even_precision = pyrsa.data.noise.prec_from_measurements(
-            even_dataset)
+    odd_precision = calc_precision(
+        dataset = odd_dataset, residuals = odd_residuals,
+        get_precision = get_precision, n_runs = n_runs)
+    even_precision = calc_precision(
+        dataset = even_dataset, residuals = even_residuals,
+        get_precision = get_precision, n_runs = n_runs)
         
     # Calculate respective rdms
     odd_rdm = pyrsa.rdm.calc.calc_rdm(odd_dataset, method='crossnobis',
@@ -90,8 +81,7 @@ def oe_split_reliability(dataset, residuals=None, l1_obs_desc='stim',
     # between vectorized rdms
     odd_vector = odd_rdm.get_vectors()
     even_vector = even_rdm.get_vectors()
-    pearson_r = np.corrcoef(odd_vector, even_vector, rowvar=True)[0,1]
-    
+    pearson_r = np.corrcoef(odd_vector, even_vector, rowvar=True)[0,1] 
     return pearson_r
 
 def subset_dataset(dataset_full, n_runs):
@@ -103,7 +93,36 @@ def subset_dataset(dataset_full, n_runs):
 
     return dataset_list
 
+def subset_residuals(residuals, n_runs, per_run = 1):
+    residuals_list = []
+    n_res = residuals.shape[0]
+    n_runs_full = n_res / per_run
+    assert n_runs_full.is_integer(), "odd number of residuals per run"
+    
+    for runs_goal in n_runs:
+        residuals_list.append(residuals[0:runs_goal*per_run, :])
+    
+    return residuals_list
 
+def calc_precision(dataset = None, residuals = None, get_precision = None,
+                   obs_desc = 'stim', n_runs = 35):
+    precision = None
+    if get_precision in ['res-total', 'res-univariate']:                            
+        precision = pyrsa.data.noise.prec_from_residuals(
+            residuals, dof=None)
+        if get_precision == 'res-univariate':
+           precision = np.multiply(
+               precision, np.identity(len(precision)))
+    elif get_precision == 'res-run-wise':
+        runwise_residuals = runwise_split_residuals(
+            residuals, n_runs = n_runs)
+        precision = pyrsa.data.noise.prec_from_residuals(
+            runwise_residuals, dof=None)
+    elif get_precision == 'instance-based':
+        precision = pyrsa.data.noise.prec_from_measurements(
+            dataset, obs_desc = obs_desc)
+    return precision
+       
 
 ###############################################################################
 
@@ -116,7 +135,7 @@ import pyrsa
 
 # Set directories and specify ROIs
 ds_dir           = "/home/alex/Datasets/ds001246/"
-n_subs           = len(glob.glob(ds_dir + os.sep + "sub*"))
+n_subs           = 1#len(glob.glob(ds_dir + os.sep + "sub*"))
 beta_type        = "data_perm_mixed"
 estimate_rel     = True
 oe_reliabilities = []
@@ -169,6 +188,7 @@ for sub in range(1, n_subs+1):
     # Load datasets
     for snr in snr_range:
         for perm in perm_range:
+            # get_precision = 'instance-based'
             for get_precision in precision_types:
                 # roi_h = 'V1_left'
                 for roi_h in roi_h_list:        
@@ -179,46 +199,34 @@ for sub in range(1, n_subs+1):
                     dataset_full = pyrsa.data.dataset.load_dataset(
                         dataset_filename, file_type='hdf5')    
                     
-                    # Load / calculate precision matrix
+                    # Load residuals
                     residuals_filename = os.path.join(
                         res_dir, "Residuals_" + roi_h + "_" + beta_type +
-                        "_" + str(perm).zfill(4) + "_snr_" + str(snr)) + ".npy"
+                        "_" + str(perm).zfill(4) + "_snr_" + str(snr)) + ".npy"   
+                    residuals_full = np.load(residuals_filename)
                     
-                    # Precision matrix
-                    if get_precision in ['res-total', 'res-univariate']:
-                        # Load residuals and estimate precision matrix
-                        residuals = np.load(residuals_filename)
-                        precision = pyrsa.data.noise.prec_from_residuals(
-                            residuals, dof=None)
-                        if get_precision == 'res_univariate':
-                           precision = np.multiply(
-                               precision, np.identity(len(precision)))
-                    elif get_precision == 'res-run-wise':
-                        # Load residuals and estimate precision matrix
-                        residuals = np.load(residuals_filename)
-                        runwise_residuals = runwise_split_residuals(
-                            residuals, n_runs=35)
-                        precision = pyrsa.data.noise.prec_from_residuals(
-                            runwise_residuals, dof=None)
-                    else:
-                        precision = None
-    
                     # Subset datasets
                     dataset_list = subset_dataset(dataset_full, run_subsets)
                     n_subsets = len(dataset_list)
+                    residuals_list = subset_residuals(
+                        residuals_full, run_subsets, per_run = 178)
                     
                     for ds_num in range(n_subsets):
                         dataset = dataset_list[ds_num]
                         n_runs = run_subsets[ds_num]
+                        residuals = residuals_list[ds_num]
+                        
+                        # Precision matrix
+                        precision = calc_precision(
+                            dataset = dataset, residuals = residuals,
+                            get_precision = get_precision, n_runs = n_runs)
                         
                         # Estimate odd-even reliability
                         oe_reliability = np.nan
-                        
                         if estimate_rel and n_runs > 2:
                             oe_reliability = oe_split_reliability(
                                 dataset, residuals=precision, l1_obs_desc='stim',
                                 l2_obs_desc='run', n_runs=n_runs, get_precision=get_precision)
-                            # oe_reliabilities.append(oe_reliability)
                         
                         # Calculate RDM with crossnobis distance estimates    
                         if calculate_rdm:
