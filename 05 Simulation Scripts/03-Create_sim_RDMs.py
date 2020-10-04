@@ -61,13 +61,12 @@ def oe_split_reliability(dataset, residuals=None, l1_obs_desc='stim',
     else:
         odd_residuals, even_residuals, odd_residuals_list, even_residuals_list = \
             oe_split_residuals(residuals, n_runs = n_runs)
-    
-    odd_precision = calc_precision(
-        dataset = odd_dataset, residuals = odd_residuals,
-        get_precision = get_precision, n_runs = n_runs)
-    even_precision = calc_precision(
-        dataset = even_dataset, residuals = even_residuals,
-        get_precision = get_precision, n_runs = n_runs)
+        odd_precision = calc_precision(
+            dataset = odd_dataset, residuals = odd_residuals,
+            get_precision = get_precision, n_runs = n_runs)
+        even_precision = calc_precision(
+            dataset = even_dataset, residuals = even_residuals,
+            get_precision = get_precision, n_runs = n_runs)
         
     # Calculate respective rdms
     odd_rdm = pyrsa.rdm.calc.calc_rdm(odd_dataset, method='crossnobis',
@@ -107,11 +106,13 @@ def subset_residuals(residuals, n_runs, per_run = 1):
 def calc_precision(dataset = None, residuals = None, get_precision = None,
                    obs_desc = 'stim', n_runs = 35):
     precision = None
-    if get_precision in ['res-total', 'res-univariate']:                            
+    if get_precision == 'res-total':                            
         precision = pyrsa.data.noise.prec_from_residuals(
             residuals, dof=None)
-        if get_precision == 'res-univariate':
-           precision = np.multiply(
+    if get_precision == 'res-univariate':
+        sample_cov, _ = pyrsa.data.noise.sample_covariance(residuals)
+        precision = np.linalg.inv(sample_cov)
+        precision = np.multiply(
                precision, np.identity(len(precision)))
     elif get_precision == 'res-run-wise':
         runwise_residuals = runwise_split_residuals(
@@ -139,7 +140,7 @@ n_subs           = 1#len(glob.glob(ds_dir + os.sep + "sub*"))
 beta_type        = "data_perm_mixed"
 estimate_rel     = True
 oe_reliabilities = []
-precision_types  = ['instance-based', 'res-total', 'res-univariate'] #opts: None, 'res-total', 'res-run-wise', 'instance-based', 'res-univariate'
+precision_types  = [None, 'instance-based', 'res-total', 'res-univariate'] #opts: None, 'res-total', 'res-run-wise', 'instance-based', 'res-univariate'
 calculate_rdm    = True
 remove_ds        = False
 freesurfer_mri   = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
@@ -186,7 +187,9 @@ for sub in range(1, n_subs+1):
     perm_range = get_n_perm(dataset_dir)
     
     # Load datasets
+    # snr = 1
     for snr in snr_range:
+        # perm = 1
         for perm in perm_range:
             # get_precision = 'instance-based'
             for get_precision in precision_types:
