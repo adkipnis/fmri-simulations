@@ -111,9 +111,9 @@ def calc_precision(dataset = None, residuals = None, get_precision = None,
             residuals, dof=None)
     if get_precision == 'res-univariate':
         sample_cov, _ = pyrsa.data.noise.sample_covariance(residuals)
-        precision = np.linalg.inv(sample_cov)
-        precision = np.multiply(
-               precision, np.identity(len(precision)))
+        sample_var = np.multiply(
+               sample_cov, np.identity(len(sample_cov)))
+        precision = np.linalg.pinv(sample_var)
     elif get_precision == 'res-run-wise':
         runwise_residuals = runwise_split_residuals(
             residuals, n_runs = n_runs)
