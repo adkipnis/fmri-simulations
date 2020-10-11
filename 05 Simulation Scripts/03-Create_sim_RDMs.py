@@ -47,17 +47,15 @@ def oe_split_residuals(residuals, n_runs=35):
         even_residuals_list
 
 
-def oe_split_reliability(dataset, residuals=None, l1_obs_desc='stim',
-                         l2_obs_desc='run', n_runs=35, get_precision='res-total'):
+def oe_split_reliability(dataset, residuals=None, obs_desc='run', n_runs=35, get_precision='res-total'):
     # Split measurements
-    odd_dataset, even_dataset = pyrsa.data.dataset.nested_odd_even_split(
-        dataset, l1_obs_desc, l2_obs_desc)
+    odd_dataset, even_dataset = pyrsa.data.dataset.odd_even_split(
+        dataset, obs_desc)
     
     # Split residuals and get precision matrices
-    if not isinstance(residuals, np.ndarray):
+    if not isinstance(residuals, np.ndarray) or get_precision == 'none':
         odd_precision = None
         even_precision = None
-        get_precision = None
     else:
         odd_residuals, even_residuals, odd_residuals_list, even_residuals_list = \
             oe_split_residuals(residuals, n_runs = n_runs)
@@ -140,7 +138,7 @@ n_subs           = 1#len(glob.glob(ds_dir + os.sep + "sub*"))
 beta_type        = "data_perm_mixed"
 estimate_rel     = True
 oe_reliabilities = []
-precision_types  = [None, 'instance-based', 'res-total', 'res-univariate'] #opts: None, 'res-total', 'res-run-wise', 'instance-based', 'res-univariate'
+precision_types  = ['none', 'instance-based', 'res-total', 'res-univariate'] #opts: None, 'res-total', 'res-run-wise', 'instance-based', 'res-univariate'
 calculate_rdm    = True
 remove_ds        = False
 freesurfer_mri   = "mri_glasser" #Name of the directory in which subject specific volumetric ROI masks are saved by FreeSurfer
@@ -191,7 +189,7 @@ for sub in range(1, n_subs+1):
     for snr in snr_range:
         # perm = 1
         for perm in perm_range:
-            # get_precision = 'instance-based'
+            # get_precision = 'none'
             for get_precision in precision_types:
                 # roi_h = 'V1_left'
                 for roi_h in roi_h_list:        
@@ -228,14 +226,14 @@ for sub in range(1, n_subs+1):
                         oe_reliability = np.nan
                         if estimate_rel and n_runs > 2:
                             oe_reliability = oe_split_reliability(
-                                dataset, residuals=precision, l1_obs_desc='stim',
-                                l2_obs_desc='run', n_runs=n_runs, get_precision=get_precision)
+                                dataset, residuals=precision, obs_desc='run',
+                                n_runs=n_runs, get_precision=get_precision)
                         
                         # Calculate RDM with crossnobis distance estimates    
                         if calculate_rdm:
                             rdm = pyrsa.rdm.calc.calc_rdm(
                                 dataset, method='crossnobis', descriptor='stim',
-                                cv_descriptor='run', noise=None)
+                                cv_descriptor='run', noise=precision)
                             rdm_p = pyrsa.rdm.rdms.permute_rdms(rdm, p = p)
                             rdm_p.rdm_descriptors = {'index': np.array([0]),
                                                      'sub': np.array([sub]),
