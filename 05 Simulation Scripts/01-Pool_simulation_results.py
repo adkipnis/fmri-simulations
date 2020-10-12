@@ -169,6 +169,7 @@ for sub in range(1, n_subs+1):
                                               str(perm).zfill(4)+"_snr_" +
                                               str(snr) + "_signal.nii.gz")
                 nifti1.save(pooled_betas, nifti_filename)
+                print("Pooled subject data to:", nifti_filename)
                 
                 # Save corresponding descriptors for the 4th dimension
                 csv_filename = os.path.join(img_output_dir, "sub-"+str(sub).zfill(2)
@@ -193,6 +194,7 @@ for sub in range(1, n_subs+1):
                                                 str(perm).zfill(4)+"_snr_" +
                                                 str(snr) + "_noise.nii.gz")
                 nifti1.save(pooled_residuals, nifti_filename_r)
+                print("Pooled subject noise to:", nifti_filename_r)
                 
                 # Save corresponding descriptors for the 4th dimension
                 csv_filename_r = os.path.join(img_output_dir, "sub-"+str(sub).zfill(2)
