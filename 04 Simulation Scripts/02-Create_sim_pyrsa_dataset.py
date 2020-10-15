@@ -233,7 +233,7 @@ estimate_cronbach = False
 cronbachs_list    = []
 save_dataset      = True
 snr_range         = [0.5, 1, 2]
-delete_inputs     = False
+delete_inputs     = True
 
 
 # Set directories, specify ROIs and load dictionary for labels

@@ -4,7 +4,7 @@
 Pipeline for testing inference on average ground truth RDM
 
 @author: alex
-"""
+moto"""
 
 def collect_RDMs(ds_dir, n_subs = 1,  beta_type = None):
     roi_rdms = []
@@ -196,15 +196,15 @@ run_subsets = np.unique(rdms.rdm_descriptors['n_runs'])
 snr_range   = np.unique(rdms.rdm_descriptors['snr_rel'])
 perms_range = np.unique(rdms.rdm_descriptors['perm'])
 
-# prec_type = 'instance-based'
+# prec_type = 'instance_based'
 for prec_type in prec_types:
-    # snr = 1.0
+    # snr = 1
     for snr in snr_range:
         # perm = 1
         for perm in perms_range:
             # roi_h = 'V1_left'
             for roi_h in roi_h_list:    
-                # n_runs = 32
+                # n_runs = 8
                 for n_runs in run_subsets: 
                     summary = {}            
                     model_rdms_list, data_rdms_list = [], []
@@ -227,7 +227,7 @@ for prec_type in prec_types:
                     n_subsets = len(model_rdms_list)
                     
                     # Do flexible inference for each subset
-                    # comb = 6
+                    # comb = 0
                     for comb in range(n_subsets):
                         fixed_models = []
                         fixed_results = []

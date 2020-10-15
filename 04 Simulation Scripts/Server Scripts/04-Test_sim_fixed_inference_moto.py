@@ -185,7 +185,9 @@ n_stim          = [5, 10, 25, 50]
 stim_sampling   = ['serial', 'random']
 
 ###############################################################################
-
+results_list = []
+df = pd.DataFrame()
+df_idx = -1
 rdms = collect_RDMs(
     ds_dir, n_subs = n_subs, beta_type = beta_type)
 prec_types  = np.unique(rdms.rdm_descriptors['prec_type'])
@@ -193,17 +195,12 @@ run_subsets = np.unique(rdms.rdm_descriptors['n_runs'])
 snr_range   = np.unique(rdms.rdm_descriptors['snr_rel'])
 perms_range = np.unique(rdms.rdm_descriptors['perm'])
 
-
-# perm = 1
-for perm in perms_range:
-    results_list = []
-    df = pd.DataFrame()
-    df_idx = -1
-    
-    # prec_type = 'instance_based'
-    for prec_type in prec_types:
-        # snr = 1
-        for snr in snr_range:
+# prec_type = 'instance_based'
+for prec_type in prec_types:
+    # snr = 1
+    for snr in snr_range:
+        # perm = 1
+        for perm in perms_range:
             # roi_h = 'V1_left'
             for roi_h in roi_h_list:    
                 # n_runs = 8
@@ -275,10 +272,10 @@ for perm in perms_range:
                         df = df.append(summary_df)
                         results_list.append(fixed_results)
                         
-    csv_fname = os.getcwd() + os.sep + "results_" + \
-        strftime("%Y-%m-%d_%H-%M", gmtime()) + ".csv"           
-    df.to_csv(csv_fname)
-    npy_fname =  os.getcwd() + os.sep + "results_" + \
-        strftime("%Y-%m-%d_%H-%M", gmtime()) + ".npy"   
-    np.save(npy_fname, results_list)                
-    # df_2 = pd.read_csv(csv_fname, index_col=0)
+csv_fname = os.getcwd() + os.sep + "results_" + \
+    strftime("%Y-%m-%d_%H-%M", gmtime()) + ".csv"           
+df.to_csv(csv_fname)
+npy_fname =  os.getcwd() + os.sep + "results_" + \
+    strftime("%Y-%m-%d_%H-%M", gmtime()) + ".npy"   
+np.save(npy_fname, results_list)                
+# df_2 = pd.read_csv(csv_fname, index_col=0)

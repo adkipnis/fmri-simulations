@@ -12,7 +12,7 @@ matlab_docs = '/moto/home/ak4572/';
 cd(matlab_docs);
 addpath(genpath(fullfile(matlab_docs, 'Toolboxes', 'nifti_utils')));
 addpath(fullfile(matlab_docs, 'Toolboxes', 'spm12'));
-addpath(fullfile(matlab_docs, 'Simulation_Utils'));
+addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
 
 Opts = struct();
 Opts.snr = [2, 1, 0.5];
@@ -31,11 +31,11 @@ Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');
 spm('Defaults','fMRI'); %Initialise SPM fmri
 spm_jobman('initcfg');  %Initialise SPM batch mode
 
-for i = 1 : Dirs.n_subs
+for i = 1 %: Dirs.n_subs
     Dirs = parse_bids_sub(Dirs, Opts, i);
     r = 0;
 
-    for s = 1 : Dirs.n_ses  
+    for s = 1 %: Dirs.n_ses  
         Dirs = get_runs(Dirs, s);
         
         for n = 1 : Dirs.n_runs

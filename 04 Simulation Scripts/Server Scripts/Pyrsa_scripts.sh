@@ -13,5 +13,6 @@
 
 module load anaconda/3-5.3.1
 source activate fmri-sim
+python 02-Create_sim_pyrsa_dataset_moto.py
 python 03-Create_sim_RDMs_moto.py
 python 04-Test_sim_fixed_inference_moto.py
