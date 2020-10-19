@@ -234,7 +234,7 @@ ggsave("results_grid_OE_NC.png", device = "png",  scale = scale, dpi = 320,
 # OE Reliabilities per ROI and SNR
 
 AOV_oe_snr <- aov_ez("GT", "oe_average", df_best,
-                     within = "snr_rel")
+                     within = "snr_rel", na.rm = TRUE)
 AOV_oe_snr_table <- nice(AOV_oe_snr)
 df_summary[nrow(df_summary) + 1,] = c("eta_OE", round(as.numeric(AOV_oe_snr_table[1,5]), digits = 2))
 
