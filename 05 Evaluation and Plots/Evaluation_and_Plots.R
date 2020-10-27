@@ -96,7 +96,8 @@ df$nc_mean = (df$nc_low + df$nc_high)/2
 df_summary = setNames(data.frame(matrix(ncol =2 , nrow = 0)), c("var", "num"))
 df_summary[nrow(df_summary) + 1,] = c("n_full", nrow(df))
 df_summary[nrow(df_summary) + 1,] = c("n_best", nrow(df_best))
-
+df_summary[nrow(df_summary) + 1,] = c("n_datasets", length(result_files))
+df_summary[nrow(df_summary) + 1,] = c("n_datasets_3", 3*length(result_files))
 ###############################################################################
 # ROI size
 ###############################################################################
