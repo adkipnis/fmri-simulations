@@ -15,7 +15,7 @@ addpath(fullfile(matlab_docs, 'Toolboxes', 'spm12'));
 addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
 
 Opts = struct();
-Opts.snr = [2, 1, 0.5];
+Opts.snr = [10, 1, 0.1];
 Opts.snr_type = 'total';
 Opts.sim_type = 'mixed'; % 'mixed', 'signal', 'noise'
 Opts.task = 'perception';
@@ -25,7 +25,7 @@ Opts = load_task_json(Opts, Dirs); % add task-related MRI specs to Opts
 Opts.pool_inference = false;
 Opts.rewrite = true; % overwrites previously saved outputs
 Opts.delete_input = true;
-Dirs = parse_bids_base_name(Dirs.BIDSdir, 'Data_perm'); % Parse BIDS directory
+Dirs = parse_bids_base_name(Dirs, 'Data_perm'); % Parse BIDS directory
 Dirs.inputdir = fullfile(Dirs.BIDSdir, 'derivatives', 'Noise_perm');
 Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');
 spm('Defaults','fMRI'); %Initialise SPM fmri

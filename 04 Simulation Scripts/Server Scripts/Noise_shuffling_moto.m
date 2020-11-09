@@ -1,6 +1,6 @@
 %==========================================================================
 %     Noise shuffling and scaling while preserving serial autocorrelations
-%     and spatial structure (w/ AR(1) model)
+%     and spatial structure (w/ AR(2) model)
 %==========================================================================
 
 %% 1. Preparations
@@ -17,14 +17,14 @@ addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
 
 Opts = struct();
 Opts.n_permutations = 2;
-Opts.ar_n = 1;
+Opts.ar_n = 2;
 Opts.task = 'perception';
 Opts.subtask = 'Test';
 Opts.session_type = [Opts.task, Opts.subtask];
 Opts.n_stim_betas = 50;
 Opts.pool_inference = false;
 Opts.rewrite = true; % overwrites previously saved outputs
-Dirs = parse_bids_base_name(Dirs.BIDSdir, 'Noise_perm'); % Parse BIDS directory
+Dirs = parse_bids_base_name(Dirs, 'Noise_perm'); % Parse BIDS directory
 Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');
 
 for i = 1 %: Dirs.n_subs
