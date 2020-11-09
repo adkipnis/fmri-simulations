@@ -17,7 +17,7 @@ addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
 
 Opts = struct();
 Opts.n_permutations = 2;
-Opts.ar_n = 1;
+Opts.ar_n = 2;
 Opts.task = 'perception';
 Opts.subtask = 'Test';
 Opts.session_type = [Opts.task, Opts.subtask];

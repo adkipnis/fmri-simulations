@@ -1,7 +1,6 @@
-function Dirs = parse_bids_base_name(BIDSdir, name)
-    Dirs.BIDSdir = BIDSdir;
+function Dirs = parse_bids_base_name(Dirs, name)
     Dirs.BIDS = spm_BIDS(Dirs.BIDSdir);
-    Dirs.sub_list = {Dirs.BIDS.subjects.name};
+    Dirs.sub_list = unique({Dirs.BIDS.subjects.name});
     for i = 1:length(Dirs.sub_list)
         Dirs.sub_list{i} = erase(Dirs.sub_list{i}, 'sub-');
     end
