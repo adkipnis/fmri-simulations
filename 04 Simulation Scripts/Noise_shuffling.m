@@ -16,7 +16,7 @@ addpath(fullfile(matlab_docs, 'Toolboxes', 'spm12'));
 addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
 
 Opts = struct();
-Opts.n_permutations = 2;
+Opts.n_permutations = 1;
 Opts.ar_n = 2;
 Opts.task = 'perception';
 Opts.subtask = 'Test';
@@ -27,10 +27,10 @@ Opts.rewrite = true; % overwrites previously saved outputs
 Dirs = parse_bids_base_name(Dirs.BIDSdir, 'Noise_perm'); % Parse BIDS directory
 Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');
 
-for i = 1 %: Dirs.n_subs
+for i = 1 : Dirs.n_subs
     Dirs = parse_bids_sub(Dirs, Opts, i);
     r = 0;
-    for s = 1 %: Dirs.n_ses  
+    for s = 1 : Dirs.n_ses  
         Dirs = get_runs(Dirs, s);
 
         for n = 1 : Dirs.n_runs

@@ -232,7 +232,7 @@ ses_type          = 'ses-' + task + stimulus_set
 estimate_cronbach = False
 cronbachs_list    = []
 save_dataset      = True
-snr_range         = [0.5, 1, 2]
+snr_range         = [0.1, 1, 10]
 delete_inputs     = True
 
 # Set directories, specify ROIs and load dictionary for labels

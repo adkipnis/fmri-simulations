@@ -135,7 +135,7 @@ stimulus_set      = 'Test'
 ses_type          = 'ses-' + task + stimulus_set
 first_n_betas     = 50
 save_dataset      = False
-snr_range         = [0.5, 1, 2]
+snr_range         = [0.1, 1, 10]
 n_perms           = 1
 delete_inputs     = True
 

@@ -66,9 +66,23 @@ def partition_sets(n_cond, stim, sampling = 'random'):
     return parts
 
 
+def check_next_model_idx(winner_idx, model_names, gt_model, k):
+    tie_winner = None
+    if k == len(winner_idx):
+        tie_winner = winner_idx[k]
+    else:
+        if model_names[winner_idx[k]][0] != gt_model:
+            tie_winner = winner_idx[k]
+        else:
+            tie_winner = check_next_model_idx(winner_idx, model_names, gt_model, k+1)
+    return tie_winner
+            
+
 def results_summary(fixed_results, roi_h):
     results = fixed_results.to_dict()
     evaluations = results['evaluations']
+    if len(evaluations.shape) > 2:
+        evaluations = np.squeeze(np.transpose(evaluations, (2, 1, 0)), axis=None)
     variances = results['variances']    
     dof = results['dof']
     noise_ceiling = results['noise_ceiling']
@@ -86,6 +100,11 @@ def results_summary(fixed_results, roi_h):
     standard_deviations = np.nanstd(evaluations, axis = 0)
     best = np.max(point_estimators)
     winner_idx = np.where(point_estimators == best)
+    
+    if len(winner_idx) > 1: #handle ties
+        winner_idx_tmp = check_next_model_idx(winner_idx, model_names, gt_model, 0)
+        winner_idx = winner_idx_tmp
+        
     winner_model = model_names[winner_idx]
     recovery = winner_model == gt_model
     
@@ -95,7 +114,10 @@ def results_summary(fixed_results, roi_h):
     better = significance[gt_model_idx,:]
     
     # Noise ceiling tests
-    noise_ceilings = np.nanmean(noise_ceiling, axis = 1)
+    if len(noise_ceiling.shape) > 1:
+        noise_ceilings = np.nanmean(noise_ceiling, axis = 1)
+    else:
+        noise_ceilings = noise_ceiling
     above_nc = best > noise_ceilings[0]
     p = pyrsa.util.inference_util.t_test_nc(
         evaluations, variances, noise_ceilings[0], noise_ceil_var[:, 0], dof)
@@ -155,7 +177,7 @@ mask_dict       = mask_utils.load_dict(os.path.join(mask_dir, "sub-" +
 roi_h_list      = list(mask_dict.keys())
 mask_dict       = None
 n_stim          = [5, 10, 20, 30, 50]
-comp_methods    = ['cosine', 'cosine_cov']
+comp_methods    = ['cosine']
 ###############################################################################
 results_list = []
 df = pd.DataFrame()
@@ -219,9 +241,13 @@ for method in comp_methods:
                             data_rdms_sub.pattern_descriptors['index'] = np.arange(
                                 data_rdms_sub.n_cond)
                             
-                            # Perform flexible inference with bootstrapping
-                            fixed_results = pyrsa.inference.eval_bootstrap_pattern(
-                                fixed_models, data_rdms_sub, method=method)
+                            # Perform fixed inference 
+                            if method == "cosine_cov":
+                                fixed_results = pyrsa.inference.eval_fixed(
+                                    fixed_models, data_rdms_sub, method=method)
+                            else:   # with bootstrapping
+                                fixed_results = pyrsa.inference.eval_bootstrap_pattern(
+                                    fixed_models, data_rdms_sub, method=method)
 
                             
                             # pyrsa.vis.plot_model_comparison(fixed_results)
@@ -245,10 +271,10 @@ for method in comp_methods:
                             df = df.append(summary_df)
                             results_list.append(fixed_results)
                         
-csv_fname = os.getcwd() + os.sep + "results_" + \
-    strftime("%Y-%m-%d_%H-%M", gmtime()) + ".csv"           
-df.to_csv(csv_fname)
-npy_fname =  os.getcwd() + os.sep + "results_" + \
-    strftime("%Y-%m-%d_%H-%M", gmtime()) + ".npy"   
-np.save(npy_fname, results_list)                
-# df_2 = pd.read_csv(csv_fname, index_col=0)
+    csv_fname = os.getcwd() + os.sep + "results_" + \
+        strftime("%Y-%m-%d_%H-%M", gmtime()) + ".csv"           
+    df.to_csv(csv_fname)
+    npy_fname =  os.getcwd() + os.sep + "results_" + \
+        strftime("%Y-%m-%d_%H-%M", gmtime()) + ".npy"   
+    np.save(npy_fname, results_list)                
+    # df_2 = pd.read_csv(csv_fname, index_col=0)

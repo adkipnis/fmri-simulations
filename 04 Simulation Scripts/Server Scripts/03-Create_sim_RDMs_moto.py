@@ -161,7 +161,7 @@ p                = [] # Permutation vector
 for i in range(len(order)):
     p.append(label2num[label_dict[order[i]]])
 p                = np.array(p)
-snr_range        = [0.5, 1, 2]
+snr_range        = [0.1, 1, 10]
 run_subsets      = [2**(i+1) for i in range(5)]
 
 ###############################################################################
