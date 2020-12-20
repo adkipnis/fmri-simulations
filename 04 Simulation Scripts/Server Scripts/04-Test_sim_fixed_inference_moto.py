@@ -177,7 +177,7 @@ mask_dict       = mask_utils.load_dict(os.path.join(mask_dir, "sub-" +
 roi_h_list      = list(mask_dict.keys())
 mask_dict       = None
 n_stim          = [5, 10, 20, 30, 50]
-comp_methods    = ['cosine']
+comp_methods    = ['cosine_cov', 'cosine']
 ###############################################################################
 results_list = []
 df = pd.DataFrame()
