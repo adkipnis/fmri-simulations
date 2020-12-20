@@ -546,8 +546,8 @@ plot_rec_snr <- ggplot(df_rec_snr, aes(y=Mean_Acc, x = GT, fill = snr_rel)) +
                 position=position_dodge(0.9))+
   scale_fill_brewer() +
   # coord_fixed(ratio = 1/7, ylim=c(45, 100), expand = FALSE)+
-  coord_cartesian(ylim=c(45, 100), expand = FALSE)+
-  scale_y_continuous(breaks=seq(50,100,5)) +
+  coord_cartesian(ylim=c(0, 100), expand = FALSE)+
+  scale_y_continuous(breaks=seq(0,100,10)) +
   labs(fill = "Relative SNR")+
   xlab("ROI")+
   ylab(expression(atop(bold("Model Recovery"), "[Percentage correct]")))+
