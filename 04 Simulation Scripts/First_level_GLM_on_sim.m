@@ -7,13 +7,15 @@
 clc
 clear all
 format long g
-Dirs.BIDSdir = '/home/alex/Datasets/ds001246/';
-matlab_docs = '/home/alex/matlab/';
-cd(matlab_docs);
+% Dirs.BIDSdir = '/home/alex/Datasets/ds001246/';
+% matlab_docs = '/home/alex/matlab/';
+Dirs.BIDSdir = '/Users/heiko/fmri-simulations/ds001246/';
+matlab_docs = '/Users/heiko/Documents/Matlab/';
+% cd(matlab_docs);
 addpath(genpath(fullfile(matlab_docs, 'Toolboxes', 'nifti_utils')));
 addpath(fullfile(matlab_docs, 'Toolboxes', 'spm12'));
-% addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'GLM_Utils'));
-addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
+% addpath(fullfile(matlab_docs, 'SPM Batchscripts', 'Simulation_Utils'));
+addpath(fullfile('Simulation_Utils'));
 
 Opts = struct();
 Opts.snr = [10, 1, 0.1];
@@ -25,7 +27,7 @@ Opts.session_type = [Opts.task, Opts.subtask];
 Opts = load_task_json(Opts, Dirs); % add task-related MRI specs to Opts
 Opts.pool_inference = false;
 Opts.rewrite = true; % overwrites previously saved outputs
-Opts.delete_input = true;
+Opts.delete_input = false;
 Dirs = parse_bids_base_name(Dirs, 'Data_perm'); % Parse BIDS directory
 Dirs.inputdir = fullfile(Dirs.BIDSdir, 'derivatives', 'Noise_perm');
 Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');

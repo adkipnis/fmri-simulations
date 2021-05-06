@@ -137,10 +137,11 @@ first_n_betas     = 50
 save_dataset      = False
 snr_range         = [0.1, 1, 10]
 n_perms           = 1
-delete_inputs     = True
+delete_inputs     = False
 
 # Set directories, specify ROIs and load dictionary for labels
-ds_dir           = "/home/alex/Datasets/ds001246/"
+#ds_dir           = "/home/alex/Datasets/ds001246/"
+ds_dir           = "/Users/heiko/fmri-simulations/ds001246/"
 spm_dir          = os.path.join(ds_dir, "derivatives", spm_type)
 n_subs           = len(glob.glob(spm_dir + os.sep + "sub*"))
 

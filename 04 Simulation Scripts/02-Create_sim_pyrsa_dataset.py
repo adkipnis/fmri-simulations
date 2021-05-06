@@ -233,13 +233,13 @@ estimate_cronbach = False
 cronbachs_list    = []
 save_dataset      = True
 snr_range         = [0.1, 1, 10]
-delete_inputs     = True
+delete_inputs     = False
 
 
 # Set directories, specify ROIs and load dictionary for labels
-ds_dir           = "/home/alex/Datasets/ds001246/"
+ds_dir           = "/Users/heiko/fmri-simulations/ds001246/"
 #directory of mask descriptors
-txt_dir          = "/home/alex/Datasets/templateflow/tpl-Glasser/"+ \
+txt_dir          = "/Users/heiko/fmri-simulations/tpl-Glasser/"+ \
                     "HCP-MMP1_on_MNI152_ICBM2009a_nlin.txt"                    
 spm_dir          = os.path.join(ds_dir, "derivatives", spm_type)
 #directory in which subject-specific volumetric ROI masks are saved by FS
