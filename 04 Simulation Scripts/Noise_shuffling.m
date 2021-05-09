@@ -9,7 +9,7 @@ clc
 clear all
 format long g
 Dirs.BIDSdir = '/home/alex/Datasets/ds001246/';
-matlab_docs = '/home/alex/matlab/';
+matlab_docs = '/home/alex/Code/MATLAB/';
 cd(matlab_docs);
 addpath(genpath(fullfile(matlab_docs, 'Toolboxes', 'nifti_utils')));
 addpath(fullfile(matlab_docs, 'Toolboxes', 'spm12'));
@@ -24,7 +24,7 @@ Opts.session_type = [Opts.task, Opts.subtask];
 Opts.n_stim_betas = 50;
 Opts.pool_inference = false;
 Opts.rewrite = true; % overwrites previously saved outputs
-Dirs = parse_bids_base_name(Dirs.BIDSdir, 'Noise_perm'); % Parse BIDS directory
+Dirs = parse_bids_base_name(Dirs, 'Noise_perm'); % Parse BIDS directory
 Dirs.GLM_results = fullfile(Dirs.BIDSdir, 'derivatives', 'Dual_GLM');
 
 for i = 1 : Dirs.n_subs
@@ -45,8 +45,8 @@ for i = 1 : Dirs.n_subs
             % Get AR(n) predictions (w/ least squares) and residuals
             [y_ar, eps, ~] = ar_n_bare_metal(y, Opts.ar_n);
             
-            % Get and apply Opts.n_permutations permutations to AR(1)
-            % residuals (eps) and merge the with AR(1) predictions
+            % Get and apply Opts.n_permutations permutations to AR(n)
+            % residuals (eps) and re-add them to AR(n) predictions
             p_mat = get_permutation_vectors(Opts);
             [y_perm, ~] = permute_residuals(y_ar, eps, p_mat, Opts);
             
