@@ -43,12 +43,12 @@ for i = 1 : Dirs.n_subs
             y = res_mat(mask_vec,:)';
             
             % Get AR(n) predictions (w/ least squares) and residuals
-            [y_ar, eps, ~] = ar_n_bare_metal(y, Opts.ar_n);
+            [y_ar, eps, A] = ar_n_bare_metal(y, Opts.ar_n);
             
-            % Get and apply Opts.n_permutations permutations to AR(1)
-            % residuals (eps) and merge the with AR(1) predictions
+            % Get and apply Opts.n_permutations permutations to AR(n)
+            % residuals (eps) and re-add them to AR(n) predictions
             p_mat = get_permutation_vectors(Opts);
-            [y_perm, ~] = permute_residuals(y_ar, eps, p_mat, Opts);
+            y_perm = permute_residuals_f(A, eps, p_mat, Opts);
             
             % Reshape permuted residual time series back into original
             % shape of the nii object and save it
